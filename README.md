@@ -1,23 +1,40 @@
-# AD_caregiver
+# 数字虚拟人系统后端
 
-# 语音模块
-#GPT-SoVITS
-#要求功能：
-1.语音克隆：依据语音素材达到相似音色***克隆多条音色，可以选择不同的声线
-#2.自动生成字幕
-#3.文本转语音
-#4.语音转文本
+基于FastAPI的数字虚拟人系统后端，包含虚拟形象构建、语音识别和数据管理功能。
 
-# 对话引擎模块
-#Emohaa 共情陪伴大模型
-#要求功能：
+## 功能特性
 
-# 虚拟形象模块 
-#EchoMimic 音频驱动肖像动画
-#要求功能：
+- **虚拟形象构建**：基于模板或自定义参数构建3D虚拟形象
+- **语音识别**：语音输入识别和转换
 
-# 知识库构建
-#要求内容：
 
-# 前端
-#要求功能：
+## 目录结构
+
+```
+digital-human/
+├── app/
+│   ├── api/
+│   │   ├── v1/
+│   │   │   ├── voice.py             # 语音识别API
+│   │   │   └── avatar_builder.py    # 虚拟形象构建API
+│   │   └── routes.py                # API路由注册
+│   ├── core/
+│   │   └── config.py                # 应用配置
+│   ├── db/
+│   │   ├── base_class.py            # 数据库基类
+│   │   ├── session.py               # 数据库会话
+│   │   └── init_db.py               # 数据库初始化
+│   ├── models/
+│   │   ├── voice.py                 # 语音模型
+│   │   └── avatar_builder.py        # 虚拟形象模型
+│   ├── schemas/
+│   │   ├── voice.py                 # 语音数据模式
+│   │   └── avatar_builder.py        # 虚拟形象数据模式
+│   └── services/
+│       ├── voice.py                 # 语音服务
+│       └── avatar_builder.py        # 虚拟形象构建服务
+├── main.py                          # 应用入口
+└── requirements.txt                 # 依赖管理
+```
+
+API将在 `http://localhost:8000` 上可用。
