@@ -16,19 +16,24 @@ digital-human/
 │   ├── api/
 │   │   ├── v1/
 │   │   │   ├── voice.py             # 语音识别API
-│   │   │   └── avatar_builder.py    # 虚拟形象构建API
+│   │   │   ├── avatar_builder.py    # 虚拟形象构建API
+│   │   │   ├── dialogue.py          # 对话引擎API
+|   |   |   └── digital_human.py     # 数字人管理API
 │   │   └── routes.py                # API路由注册
 │   ├── core/
 │   │   └── config.py                # 应用配置
 │   ├── db/
 │   │   ├── base_class.py            # 数据库基类
 │   │   ├── session.py               # 数据库会话
+│   │   ├── models.py                # 数据库模型
 │   │   └── init_db.py               # 数据库初始化
 │   ├── models/
 │   │   ├── voice.py                 # 语音模型
 │   │   └── avatar_builder.py        # 虚拟形象模型
 │   ├── schemas/
 │   │   ├── voice.py                 # 语音数据模式
+│   │   ├── dialogue.py              # 对话服务
+│   │   ├── digital_human.py         # 数字人管理服务
 │   │   └── avatar_builder.py        # 虚拟形象数据模式
 │   └── services/
 │       ├── voice.py                 # 语音服务
