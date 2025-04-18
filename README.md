@@ -17,8 +17,7 @@ digital-human/
 │   │   ├── v1/
 │   │   │   ├── voice.py             # 语音识别API
 │   │   │   ├── avatar_builder.py    # 虚拟形象构建API
-│   │   │   ├── dialogue.py          # 对话引擎API
-|   |   |   └── digital_human.py     # 数字人管理API
+|   |   |   └── dialogue.py          # 对话引擎API
 │   │   └── routes.py                # API路由注册
 │   ├── core/
 │   │   └── config.py                # 应用配置
