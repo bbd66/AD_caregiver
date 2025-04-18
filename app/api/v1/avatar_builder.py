@@ -6,6 +6,4 @@ from app.services.avatar_builder import AvatarBuilderService
 router = APIRouter()
 service = AvatarBuilderService()
 
-# 虚拟形象构建路由
-
 #   示例：@router.post("/build", response_model=AvatarBuildResponse)
