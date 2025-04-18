@@ -7,6 +7,11 @@ from pydantic import AnyHttpUrl, BaseSettings, PostgresDsn, validator
 class Settings(BaseSettings):
     """Application settings"""
     
+    # 新增语音服务配置
+    SILICONFLOW_API_KEY: str
+     # 新增deepseek问答服务配置
+    DEEPSEEK_API_KEY: str
+    
     # API configuration
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
