@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>文档管理</title>
+    <style>
+        .document-list {
+            margin-top: 20px;
+        }
+        .document-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .document-info {
+            margin-bottom: 5px;
+        }
+        .document-actions {
+            margin-top: 10px;
+        }
+        .navigation {
+            margin-bottom: 20px;
+        }
+        .navigation a {
+            margin-right: 10px;
+            text-decoration: none;
+            color: #333;
+        }
+        .navigation a:hover {
+            color: #4CAF50;
+        }
+        .current-digital-human {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>文档管理</h1>
+        
+        <!-- 导航链接 -->
+        <div class="navigation">
+            <a href="{{ url_for('digital_humans', user_id=user_id) }}">🤖 数字人管理</a> |
+            <a href="{{ url_for('audio', user_id=user_id) }}">🎵 音频管理</a> |
+            <a href="{{ url_for('user_profile', user_id=user_id) }}">👤 用户信息</a>
+        </div>
+
+        <!-- 显示当前数字人信息 -->
+        {% if current_dh %}
+        <div class="current-digital-human">
+            <h3>当前数字人：{{ current_dh.name }}</h3>
+            <p>电话：{{ current_dh.phone }}</p>
+            <p>描述：{{ current_dh.description }}</p>
+        </div>
+        {% endif %}
+        
+        <!-- 上传表单 -->
+        <h2>上传新文档</h2>
+        <form action="{{ url_for('documents', user_id=user_id) }}" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="title">文档标题：</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="description">文档描述：</label>
+                <textarea id="description" name="description" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="digital_human_id">关联数字人：</label>
+                <select id="digital_human_id" name="digital_human_id">
+                    <option value="">不关联</option>
+                    {% for dh in digital_humans %}
+                        <option value="{{ dh.id }}" {% if current_dh and dh.id == current_dh.id %}selected{% endif %}>
+                            {{ dh.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="document">选择文件：</label>
+                <input type="file" id="document" name="document" required>
+            </div>
+            <button type="submit">上传</button>
+        </form>
+
+        <!-- 文档列表 -->
+        <h2>已上传的文档</h2>
+        <div class="document-list">
+            {% for doc in documents %}
+                <div class="document-item">
+                    <div class="document-info">
+                        <h3>{{ doc.title }}</h3>
+                        <p>文件名：{{ doc.filename }}</p>
+                        <p>文件类型：{{ doc.file_type }}</p>
+                        <p>文件大小：{{ doc.file_size }} 字节</p>
+                        <p>上传时间：{{ doc.upload_time }}</p>
+                        {% if doc.description %}
+                            <p>描述：{{ doc.description }}</p>
+                        {% endif %}
+                        {% if doc.digital_human %}
+                            <p>关联数字人：{{ doc.digital_human.name }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="document-actions">
+                        <a href="{{ url_for('static', filename='uploads/' + doc.filepath) }}" target="_blank">查看</a>
+                        <form action="{{ url_for('delete_document', id=doc.id, user_id=user_id) }}" method="post" style="display: inline;">
+                            <button type="submit">删除</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- 显示消息 -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <p><a href="/">返回主页</a></p>
+    </div>
+</body>
+</html> 
