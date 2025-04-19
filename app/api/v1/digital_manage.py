@@ -166,12 +166,69 @@ async def list_digital_humans(
         )
 
 
+
 # 功能​：获取单个数字人详情
 # ​路径参数​：
 # digital_human_id: 数字人ID（支持local-前缀的临时ID）
 ​# 响应​：DigitalHumanResponse
 @app.get("/digital-humans/{digital_human_id}", response_model=DigitalHumanResponse)
-async def get_digital_human(...)
+async def get_digital_human(
+    digital_human_id: str,
+    db: DatabaseManager = Depends(get_db)
+):
+    """
+    获取指定ID的数字人
+    """
+    logger.info(f"获取数字人 ID: {digital_human_id}")
+    
+    # 检查是否是本地临时ID
+    if digital_human_id.startswith("local-") and digital_human_id in LOCAL_TEMP_DATA:
+        local_data = LOCAL_TEMP_DATA[digital_human_id]
+        _ensure_required_fields(local_data)
+        logger.info(f"从本地存储获取的数据: {local_data}")
+        
+        return DigitalHumanResponse(
+            success=True,
+            message="获取数字人成功（本地模式）",
+            data=DigitalHuman(**local_data)
+        )
+    
+    try:
+        # 尝试从数据库获取
+        human = db.get_digital_human(int(digital_human_id))
+        logger.info(f"从数据库获取的数据: {human}")
+        
+        if not human:
+            logger.warning(f"数据库中不存在ID为{digital_human_id}的数字人")
+            return DigitalHumanResponse(
+                success=False,
+                message=f"ID为{digital_human_id}的数字人不存在"
+            )
+        
+        # 确保所有必要字段存在
+        _ensure_required_fields(human)
+        logger.info(f"添加默认值后的数据: {human}")
+        
+        return DigitalHumanResponse(
+            success=True,
+            message="获取数字人成功",
+            data=DigitalHuman(**human)
+        )
+    except ValueError:
+        # 如果ID不是整数也不是有效的本地ID
+        logger.error(f"无效的ID格式: {digital_human_id}")
+        return DigitalHumanResponse(
+            success=False,
+            message=f"无效的ID格式: {digital_human_id}"
+        )
+    except Exception as e:
+        logger.error(f"获取数字人信息出错: {e}", exc_info=True)
+        return DigitalHumanResponse(
+            success=False,
+            message=f"获取数字人信息时发生错误"
+        )
+
+
 
 # ​功能​：删除数字人
 ​# 路径参数​：
