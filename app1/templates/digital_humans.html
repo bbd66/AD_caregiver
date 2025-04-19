@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>数字人管理</title>
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        textarea {
+            height: 100px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .digital-human-list {
+            margin-top: 30px;
+        }
+        .digital-human-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        .digital-human-info {
+            margin-bottom: 10px;
+        }
+        .digital-human-files {
+            margin-top: 10px;
+        }
+        .file-item {
+            margin-bottom: 5px;
+        }
+        .actions {
+            margin-top: 10px;
+        }
+        .delete-btn {
+            background-color: #f44336;
+        }
+        .delete-btn:hover {
+            background-color: #da190b;
+        }
+        .navigation {
+            margin-bottom: 20px;
+        }
+        .navigation a {
+            margin-right: 10px;
+        }
+        .digital-human-documents {
+            margin-top: 10px;
+        }
+        .document-upload-form {
+            margin-bottom: 10px;
+        }
+        .document-list {
+            margin-top: 10px;
+        }
+        .document-item {
+            margin-bottom: 5px;
+        }
+        .document-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .document-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .delete-doc-btn {
+            background-color: #f44336;
+        }
+        .delete-doc-btn:hover {
+            background-color: #da190b;
+        }
+        .digital-human-audio-files {
+            margin-top: 10px;
+        }
+        .audio-list {
+            margin-top: 10px;
+        }
+        .audio-item {
+            margin-bottom: 5px;
+        }
+        .audio-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .audio-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .delete-audio-btn {
+            background-color: #f44336;
+        }
+        .delete-audio-btn:hover {
+            background-color: #da190b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>数字人管理 - {{ user.username }}</h1>
+        
+        <!-- 导航链接 -->
+        <div class="navigation">
+            <a href="{{ url_for('audio', user_id=user.id) }}">🎵 音频管理</a> |
+            <a href="{{ url_for('edit_profile', id=user.id) }}">👤 用户信息</a>
+        </div>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        
+        <!-- 创建新数字人表单 -->
+        <h2>创建新数字人</h2>
+        <form method="POST" action="{{ url_for('digital_humans', user_id=user.id) }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="name">姓名：</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">电话号码：</label>
+                <input type="text" id="phone" name="phone">
+            </div>
+            
+            <div class="form-group">
+                <label for="description">描述：</label>
+                <textarea id="description" name="description"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="reference_audio">参考音频：</label>
+                <input type="file" id="reference_audio" name="reference_audio" accept="audio/*">
+            </div>
+            
+            <div class="form-group">
+                <label for="train_audio">训练音频：</label>
+                <input type="file" id="train_audio" name="train_audio" accept="audio/*">
+            </div>
+            
+            <div class="form-group">
+                <label for="image">图片：</label>
+                <input type="file" id="image" name="image" accept="image/*">
+            </div>
+            
+            <div class="form-group">
+                <label for="video">视频：</label>
+                <input type="file" id="video" name="video" accept="video/*">
+            </div>
+            
+            <div class="form-group">
+                <label for="patient_info">患者信息：</label>
+                <input type="file" id="patient_info" name="patient_info">
+            </div>
+            
+            <button type="submit">创建数字人</button>
+        </form>
+        
+        <!-- 数字人列表 -->
+        <div class="digital-human-list">
+            <h2>我的数字人</h2>
+            {% for dh in digital_humans %}
+                <div class="digital-human-item" id="dh-{{ dh.id }}">
+                    <div class="digital-human-info">
+                        <h3>{{ dh.name }}</h3>
+                        <p>电话：{{ dh.phone }}</p>
+                        <p>描述：{{ dh.description }}</p>
+                        <p>创建时间：{{ dh.created_at }}</p>
+                    </div>
+                    
+                    <div class="digital-human-files">
+                        {% if dh.reference_audio_path %}
+                            <div class="file-item">
+                                <strong>参考音频：</strong>
+                                <audio controls>
+                                    <source src="{{ url_for('static', filename='uploads/' + dh.reference_audio_path) }}">
+                                    您的浏览器不支持音频元素。
+                                </audio>
+                            </div>
+                        {% endif %}
+                        
+                        {% if dh.train_audio_path %}
+                            <div class="file-item">
+                                <strong>训练音频：</strong>
+                                <audio controls>
+                                    <source src="{{ url_for('static', filename='uploads/' + dh.train_audio_path) }}">
+                                    您的浏览器不支持音频元素。
+                                </audio>
+                            </div>
+                        {% endif %}
+                        
+                        {% if dh.image_path %}
+                            <div class="file-item">
+                                <strong>图片：</strong>
+                                <img src="{{ url_for('static', filename='uploads/' + dh.image_path) }}" 
+                                     alt="{{ dh.name }}的图片" style="max-width: 200px;">
+                            </div>
+                        {% endif %}
+                        
+                        {% if dh.video_path %}
+                            <div class="file-item">
+                                <strong>视频：</strong>
+                                <video controls width="320" height="240">
+                                    <source src="{{ url_for('static', filename='uploads/' + dh.video_path) }}">
+                                    您的浏览器不支持视频元素。
+                                </video>
+                            </div>
+                        {% endif %}
+                        
+                        {% if dh.patient_info_path %}
+                            <div class="file-item">
+                                <strong>患者信息：</strong>
+                                <a href="{{ url_for('static', filename='uploads/' + dh.patient_info_path) }}" target="_blank">查看患者信息</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- 文档管理部分 -->
+                    <div class="digital-human-documents">
+                        <h4>关联文档</h4>
+                        
+                        <!-- 上传文档表单 -->
+                        <form action="{{ url_for('documents', user_id=user.id, dh_id=dh.id) }}" method="post" enctype="multipart/form-data" class="document-upload-form">
+                            <div class="form-group">
+                                <label for="title_{{ dh.id }}">文档标题：</label>
+                                <input type="text" id="title_{{ dh.id }}" name="title" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="description_{{ dh.id }}">文档描述：</label>
+                                <textarea id="description_{{ dh.id }}" name="description" rows="2"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="document_{{ dh.id }}">选择文件：</label>
+                                <input type="file" id="document_{{ dh.id }}" name="document" required>
+                            </div>
+                            <button type="submit">上传文档</button>
+                        </form>
+                        
+                        <!-- 聊天记录导入表单 -->
+                        <div class="upload-section">
+                            <h4>导入聊天记录</h4>
+                            <form action="{{ url_for('import_chat', dh_id=dh.id, user_id=user.id) }}" method="post" enctype="multipart/form-data">
+                                <div class="form-group">
+                                    <label for="chat_file">选择聊天记录文件:</label>
+                                    <input type="file" name="chat_file" accept=".txt" required>
+                                    <small class="form-text text-muted">请选择从聊天应用导出的.txt文件</small>
+                                </div>
+                                <button type="submit" class="btn btn-info">导入聊天记录</button>
+                            </form>
+                        </div>
+                        
+                        <!-- 显示关联文档 -->
+                        {% if dh.documents %}
+                            <div class="document-list">
+                                <ul>
+                                    {% for doc in dh.documents %}
+                                        <li class="document-item">
+                                            <div class="document-info">
+                                                <strong>{{ doc.title }}</strong>
+                                                {% if doc.description %} - {{ doc.description }}{% endif %}
+                                                <div class="document-actions">
+                                                    <a href="{{ url_for('static', filename='uploads/' + doc.filepath) }}" target="_blank">查看</a>
+                                                    <form action="{{ url_for('delete_document', id=doc.id, user_id=user.id, return_to='digital_humans') }}" method="post" style="display: inline;">
+                                                        <button type="submit" class="delete-doc-btn">删除</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% else %}
+                            <p>暂无关联文档</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- 音频管理部分 -->
+                    <div class="digital-human-audio-files">
+                        <h4>关联音频</h4>
+                        
+                        <!-- 音频文件链接 -->
+                        <div>
+                            <a href="{{ url_for('audio', user_id=user.id, dh_id=dh.id) }}" class="btn">管理音频文件</a>
+                        </div>
+                        
+                        <!-- 显示关联音频 -->
+                        {% if dh.audio_files %}
+                            <div class="audio-list">
+                                <ul>
+                                    {% for audio in dh.audio_files %}
+                                        <li class="audio-item">
+                                            <div class="audio-info">
+                                                <strong>{{ audio.filename }}</strong>
+                                                <audio controls>
+                                                    <source src="{{ url_for('static', filename=audio.filepath) }}">
+                                                    您的浏览器不支持音频元素。
+                                                </audio>
+                                                <div class="audio-actions">
+                                                    <form action="{{ url_for('delete', id=audio.id, user_id=user.id, return_to='digital_humans') }}" method="post" style="display: inline;">
+                                                        <button type="submit" class="delete-audio-btn">删除</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% else %}
+                            <p>暂无关联音频</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="actions">
+                        <form action="{{ url_for('delete_digital_human', id=dh.id) }}" method="post" style="display: inline;">
+                            <button type="submit" class="delete-btn">删除</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html> 
