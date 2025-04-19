@@ -107,7 +107,64 @@ async def create_digital_human(
 #          search: 搜索关键词
 ​# 响应​：DigitalHumanListResponse（含分页结果）
 @app.get("/digital-humans/", response_model=DigitalHumanListResponse)
-async def list_digital_humans(...)
+async def list_digital_humans(
+    skip: int = Query(0, ge=0, description="分页起始位置"),
+    limit: int = Query(10, ge=1, le=100, description="每页数量"),
+    search: Optional[str] = Query(None, description="搜索关键词"),
+    db: DatabaseManager = Depends(get_db)
+):
+    """
+    获取数字人列表，支持分页和搜索
+    """
+    try:
+        if search:
+            # 使用搜索功能
+            humans, total = db.search_digital_humans(search, skip, limit)
+        else:
+            # 使用分页功能
+            humans, total = db.get_digital_humans_with_pagination(skip, limit)
+        
+        logger.info(f"从数据库获取的数据: {humans}")
+        
+        # 确保每条记录都有必要的字段
+        for human in humans:
+            _ensure_required_fields(human)
+        
+        logger.info(f"添加默认值后的数据: {humans}")
+        
+        # 添加临时创建的本地数据（如果有）
+        local_humans = list(LOCAL_TEMP_DATA.values())
+        if local_humans and not search:  # 在搜索模式下不添加本地数据
+            total += len(local_humans)
+            if skip < len(local_humans):
+                # 只添加在当前分页范围内的本地数据
+                local_to_add = local_humans[skip:skip+limit]
+                humans = local_to_add + humans
+                if len(humans) > limit:
+                    humans = humans[:limit]
+        
+        return DigitalHumanListResponse(
+            success=True,
+            message="获取数字人列表成功",
+            data=DigitalHumanList(
+                items=[DigitalHuman(**human) for human in humans],
+                total=total
+            )
+        )
+    except Exception as e:
+        logger.error(f"获取数字人列表出错: {e}", exc_info=True)
+        # 返回本地数据作为备份
+        local_humans = list(LOCAL_TEMP_DATA.values())
+        
+        return DigitalHumanListResponse(
+            success=True,
+            message="获取数字人列表成功（本地模式）",
+            data=DigitalHumanList(
+                items=[DigitalHuman(**human) for human in local_humans],
+                total=len(local_humans)
+            )
+        )
+
 
 # 功能​：获取单个数字人详情
 # ​路径参数​：
