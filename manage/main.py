@@ -521,12 +521,6 @@ def _ensure_required_fields(data: Dict[str, Any]):
     if 'description' not in data or not data['description']:
         data['description'] = f"{data.get('name', '未命名')} 的描述"
         
-    if 'referenceAudioLength' not in data or not data['referenceAudioLength']:
-        data['referenceAudioLength'] = '0秒'
-        
-    if 'trainingAudioLength' not in data or not data['trainingAudioLength']:
-        data['trainingAudioLength'] = '0秒'
-        
     if 'referenceAudio' not in data or not data['referenceAudio']:
         data['referenceAudio'] = ''
         

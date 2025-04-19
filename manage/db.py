@@ -77,8 +77,6 @@ class DatabaseManager:
                 - referenceAudio: 参考音频的完整文件路径 (可选)
                 - trainingAudio: 训练音频的完整文件路径 (可选)
                 - avatar: 头像的完整文件路径 (可选)
-                - referenceAudioLength: 参考音频长度 (可选)
-                - trainingAudioLength: 训练音频长度 (可选)
                 
         Returns:
             int: 新添加记录的ID，如果添加失败则返回None
@@ -92,20 +90,12 @@ class DatabaseManager:
         # 设置默认值，确保所有必要字段都存在
         if 'description' not in digital_human_data or not digital_human_data['description']:
             digital_human_data['description'] = f"{digital_human_data.get('name', '')} 的描述"
-            
-        if 'referenceAudioLength' not in digital_human_data or not digital_human_data['referenceAudioLength']:
-            digital_human_data['referenceAudioLength'] = '0秒'
-            
-        if 'trainingAudioLength' not in digital_human_data or not digital_human_data['trainingAudioLength']:
-            digital_human_data['trainingAudioLength'] = '0秒'
         
         # 处理字段名称映射
         field_mapping = {
             'avatar': 'image_path',
             'referenceAudio': 'reference_audio_path',
-            'trainingAudio': 'train_audio_path',
-            'referenceAudioLength': 'reference_audio_length',
-            'trainingAudioLength': 'training_audio_length'
+            'trainingAudio': 'train_audio_path'
         }
         
         # 记录特别关注的字段
@@ -134,8 +124,7 @@ class DatabaseManager:
         # 有效的数据库字段列表
         valid_fields = [
             'name', 'phone', 'description', 
-            'reference_audio_path', 'train_audio_path', 'image_path',
-            'reference_audio_length', 'training_audio_length'
+            'reference_audio_path', 'train_audio_path', 'image_path'
         ]
         
         for field, value in formatted_data.items():
@@ -212,9 +201,7 @@ class DatabaseManager:
         field_mapping = {
             'image_path': 'avatar',
             'reference_audio_path': 'referenceAudio',
-            'train_audio_path': 'trainingAudio',
-            'reference_audio_length': 'referenceAudioLength',
-            'training_audio_length': 'trainingAudioLength'
+            'train_audio_path': 'trainingAudio'
         }
         
         # 创建一个新的字典，用于存储格式化后的数据
@@ -230,12 +217,6 @@ class DatabaseManager:
         # 确保所有必要字段都存在
         if 'description' not in formatted_record or not formatted_record['description']:
             formatted_record['description'] = f"{formatted_record.get('name', '')} 的描述"
-            
-        if 'referenceAudioLength' not in formatted_record or not formatted_record['referenceAudioLength']:
-            formatted_record['referenceAudioLength'] = '0秒'
-            
-        if 'trainingAudioLength' not in formatted_record or not formatted_record['trainingAudioLength']:
-            formatted_record['trainingAudioLength'] = '0秒'
             
         if 'referenceAudio' not in formatted_record or not formatted_record['referenceAudio']:
             formatted_record['referenceAudio'] = ''
@@ -340,9 +321,7 @@ class DatabaseManager:
         field_mapping = {
             'avatar': 'image_path',
             'referenceAudio': 'reference_audio_path',
-            'trainingAudio': 'train_audio_path',
-            'referenceAudioLength': 'reference_audio_length',
-            'trainingAudioLength': 'training_audio_length'
+            'trainingAudio': 'train_audio_path'
         }
         
         # 创建一个新的字典，用于存储格式化后的数据
@@ -356,8 +335,7 @@ class DatabaseManager:
         
         valid_fields = [
             'name', 'phone', 'description', 
-            'reference_audio_path', 'train_audio_path', 'image_path',
-            'reference_audio_length', 'training_audio_length'
+            'reference_audio_path', 'train_audio_path', 'image_path'
         ]
         
         update_parts = []
@@ -409,9 +387,7 @@ class DatabaseManager:
             description TEXT,
             reference_audio_path VARCHAR(500),
             train_audio_path VARCHAR(500),
-            image_path VARCHAR(500),
-            reference_audio_length VARCHAR(50),
-            training_audio_length VARCHAR(50)
+            image_path VARCHAR(500)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
         """
         logger.info("创建表: digital_human")
@@ -429,45 +405,6 @@ class DatabaseManager:
             # 更新reference_audio_path、train_audio_path和image_path列的长度
             logger.info("检查并修改列长度")
             self._modify_column_length()
-            
-            # 检查reference_audio_length列是否存在
-            check_query = """
-                SELECT COUNT(*) as count 
-                FROM information_schema.columns 
-                WHERE table_schema = %s 
-                AND table_name = 'digital_human' 
-                AND column_name = 'reference_audio_length'
-            """
-            result = self.execute_query(check_query, (self.connection_params['db'],))
-            
-            if result and result[0]['count'] == 0:
-                # 添加reference_audio_length列
-                logger.info("添加列: reference_audio_length")
-                add_column_query = """
-                    ALTER TABLE digital_human 
-                    ADD COLUMN reference_audio_length VARCHAR(50)
-                """
-                self.execute_query(add_column_query)
-            
-            # 检查training_audio_length列是否存在
-            check_query = """
-                SELECT COUNT(*) as count 
-                FROM information_schema.columns 
-                WHERE table_schema = %s 
-                AND table_name = 'digital_human' 
-                AND column_name = 'training_audio_length'
-            """
-            result = self.execute_query(check_query, (self.connection_params['db'],))
-            
-            if result and result[0]['count'] == 0:
-                # 添加training_audio_length列
-                logger.info("添加列: training_audio_length")
-                add_column_query = """
-                    ALTER TABLE digital_human 
-                    ADD COLUMN training_audio_length VARCHAR(50)
-                """
-                self.execute_query(add_column_query)
-                
             return True
         except Exception as e:
             logger.error(f"添加列失败: {e}", exc_info=True)
@@ -551,9 +488,7 @@ if __name__ == "__main__":
             'description': '这是一个测试数字人',
             'referenceAudio': 'C:\\Users\\MSI-NB\\Desktop\\reference.wav',
             'trainingAudio': 'C:\\Users\\MSI-NB\\Desktop\\train.wav',
-            'avatar': 'C:\\Users\\MSI-NB\\Desktop\\avatar.jpg',
-            'referenceAudioLength': '5秒',
-            'trainingAudioLength': '30秒'
+            'avatar': 'C:\\Users\\MSI-NB\\Desktop\\avatar.jpg'
         }
         
         new_id = db_manager.add_digital_human(new_digital_human)
