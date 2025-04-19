@@ -235,7 +235,65 @@ async def get_digital_human(
 # digital_human_id: 数字人ID（支持临时ID）
 ​# 响应​：操作结果
 @app.delete("/digital-humans/{digital_human_id}", response_model=DigitalHumanResponse)
-async def delete_digital_human(...)
+async def delete_digital_human(
+    digital_human_id: str,
+    db: DatabaseManager = Depends(get_db)
+):
+    """
+    删除指定ID的数字人
+    """
+    logger.info(f"删除数字人 ID: {digital_human_id}")
+    
+    # 检查是否是本地临时ID
+    if digital_human_id.startswith("local-") and digital_human_id in LOCAL_TEMP_DATA:
+        # 从本地存储中删除
+        del LOCAL_TEMP_DATA[digital_human_id]
+        logger.info(f"从本地存储删除ID为{digital_human_id}的数字人")
+        
+        return DigitalHumanResponse(
+            success=True,
+            message=f"成功删除ID为{digital_human_id}的数字人（本地模式）"
+        )
+    
+    try:
+        # 尝试从数据库删除
+        # 先检查数字人是否存在
+        existing_human = db.get_digital_human(int(digital_human_id))
+        if not existing_human:
+            logger.warning(f"数据库中不存在ID为{digital_human_id}的数字人")
+            return DigitalHumanResponse(
+                success=False,
+                message=f"ID为{digital_human_id}的数字人不存在"
+            )
+        
+        # 删除数字人
+        success = db.delete_digital_human(int(digital_human_id))
+        logger.info(f"删除结果: {success}")
+        
+        if not success:
+            logger.error(f"删除ID为{digital_human_id}的数字人失败")
+            return DigitalHumanResponse(
+                success=False,
+                message="删除数字人失败"
+            )
+        
+        return DigitalHumanResponse(
+            success=True,
+            message=f"成功删除ID为{digital_human_id}的数字人"
+        )
+    except ValueError:
+        # 如果ID不是整数也不是有效的本地ID
+        logger.error(f"无效的ID格式: {digital_human_id}")
+        return DigitalHumanResponse(
+            success=False,
+            message=f"无效的ID格式: {digital_human_id}"
+        )
+    except Exception as e:
+        logger.error(f"删除数字人出错: {e}", exc_info=True)
+        return DigitalHumanResponse(
+            success=False,
+            message=f"删除数字人时发生错误"
+        )
 
 # 功能​：更新数字人信息
 # ​参数​：
