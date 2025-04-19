@@ -295,6 +295,8 @@ async def delete_digital_human(
             message=f"删除数字人时发生错误"
         )
 
+
+
 # 功能​：更新数字人信息
 # ​参数​：
 # 路径参数：digital_human_id
@@ -303,12 +305,64 @@ async def delete_digital_human(
 @app.put("/digital-humans/{digital_human_id}", response_model=DigitalHumanResponse)
 async def update_digital_human(...)
 
+
+
 # 文件上传
 # 功能​：上传数字人头像
 ​# 文件类型​：JPG/PNG
 ​# 返回​：图片访问URL
 @app.post("/upload/image")
-async def upload_image(...)
+async def upload_image(file: UploadFile = File(...)):
+    """
+    处理图片上传
+    """
+    logger.info(f"接收到图片上传: {file.filename}")
+    
+    # 检查文件类型
+    allowed_types = ["image/jpeg", "image/png", "image/jpg"]
+    content_type = file.content_type
+    
+    if content_type not in allowed_types:
+        logger.warning(f"不支持的文件类型: {content_type}")
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "message": "上传失败：文件格式不支持，仅支持JPG、PNG格式"
+            }
+        )
+    
+    try:
+        # 生成唯一文件名
+        file_extension = os.path.splitext(file.filename)[1]
+        unique_filename = f"{uuid.uuid4()}_{int(time.time())}{file_extension}"
+        file_path = AVATARS_DIR / unique_filename
+        
+        # 保存文件
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # 生成访问URL
+        image_url = f"/static/uploads/avatars/{unique_filename}"
+        logger.info(f"图片已保存: {file_path}, URL: {image_url}")
+        
+        return {
+            "success": True,
+            "imageUrl": image_url,
+            "message": "上传成功"
+        }
+    except Exception as e:
+        logger.error(f"图片上传出错: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": f"上传失败：服务器处理错误 - {str(e)}"
+            }
+        )
+
+
 
 # 功能​：上传参考音频
 ​# 文件类型​：WAV/MP3
