@@ -6,14 +6,17 @@ import threading
 import os
 import datetime
 
+# API Key 和 API URL
 API_KEY = "sk-7d54d72c0a314c45ae838b4ea422d152"
 API_URL = "https://api.deepseek.com/v1/chat/completions"
 
+# 设置请求头
 headers = {
     "Content-Type": "application/json",
     "Authorization": f"Bearer {API_KEY}"
 }
 
+# 对话类
 class DeepSeekChatApp:
     def __init__(self, root):
         self.root = root
@@ -136,6 +139,7 @@ class DeepSeekChatApp:
             "model": "deepseek-chat",
             "messages": [
                 {
+                    # 提示词
                     "role": "system",
                     "content": "You are a compassionate, patient, and understanding assistant focused on supporting and caring for individuals with Alzheimer's disease (AD). Your main goal is to enhance their quality of life by offering support, comfort, and practical help while respecting their dignity and autonomy. Interact with empathy and patience, using simple and clear communication. Provide gentle reminders and guidance for memory-related challenges. Address emotional needs with comfort and encouragement, always prioritizing safety and well-being. Promote cognitive and physical engagement through simple activities like reminiscence therapy, puzzles, or light exercises, and help maintain a stable daily routine. Support family members and caregivers by helping them understand the patient's needs and communicating effectively. Treat patients with respect and dignity, avoiding underestimation of their abilities. Adapt flexibly to changing needs and mood fluctuations, tailoring your approach to their current state.Please use Chinese language."
                 },
