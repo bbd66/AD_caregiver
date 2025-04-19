@@ -1,10 +1,17 @@
 from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Union
 import time
 import json
 import logging
+import os
+import shutil
+import uuid
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi import UploadFile, File, Form
 
 # 配置日志
 logging.basicConfig(
@@ -43,6 +50,22 @@ app.add_middleware(
 
 # 临时存储，用于在网络异常时创建本地ID
 LOCAL_TEMP_DATA = {}
+
+# 创建静态文件目录
+STATIC_DIR = Path("./static")
+IMAGES_DIR = STATIC_DIR / "images"
+AUDIO_DIR = STATIC_DIR / "audio"
+UPLOADS_DIR = STATIC_DIR / "uploads"
+AVATARS_DIR = UPLOADS_DIR / "avatars"
+
+# 确保目录存在
+IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+AVATARS_DIR.mkdir(parents=True, exist_ok=True)
+
+# 添加静态文件支持
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # 依赖项：创建数据库管理器
 def get_db():
@@ -88,6 +111,20 @@ async def create_digital_human(
     # 确保必要字段存在，如果不存在则设置默认值
     _ensure_required_fields(digital_human_data)
     logger.info(f"添加默认值后的数据: {digital_human_data}")
+    
+    # avatar字段现在应该是从/upload/image接口获取的URL，无需再处理文件
+    # 只需处理音频文件路径
+    if 'original_reference_audio_path' in digital_human_data and digital_human_data['original_reference_audio_path']:
+        logger.info(f"处理参考音频文件: {digital_human_data['original_reference_audio_path']}")
+        reference_audio_url = copy_file_to_static(digital_human_data['original_reference_audio_path'], AUDIO_DIR)
+        if reference_audio_url:
+            digital_human_data['referenceAudio'] = reference_audio_url
+    
+    if 'original_training_audio_path' in digital_human_data and digital_human_data['original_training_audio_path']:
+        logger.info(f"处理训练音频文件: {digital_human_data['original_training_audio_path']}")
+        training_audio_url = copy_file_to_static(digital_human_data['original_training_audio_path'], AUDIO_DIR)
+        if training_audio_url:
+            digital_human_data['trainingAudio'] = training_audio_url
     
     try:
         # 调用数据库方法添加数字人
@@ -320,6 +357,162 @@ async def delete_digital_human(
         )
 
 
+@app.post("/upload/image")
+async def upload_image(file: UploadFile = File(...)):
+    """
+    处理图片上传
+    """
+    logger.info(f"接收到图片上传: {file.filename}")
+    
+    # 检查文件类型
+    allowed_types = ["image/jpeg", "image/png", "image/jpg"]
+    content_type = file.content_type
+    
+    if content_type not in allowed_types:
+        logger.warning(f"不支持的文件类型: {content_type}")
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "message": "上传失败：文件格式不支持，仅支持JPG、PNG格式"
+            }
+        )
+    
+    try:
+        # 生成唯一文件名
+        file_extension = os.path.splitext(file.filename)[1]
+        unique_filename = f"{uuid.uuid4()}_{int(time.time())}{file_extension}"
+        file_path = AVATARS_DIR / unique_filename
+        
+        # 保存文件
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # 生成访问URL
+        image_url = f"/static/uploads/avatars/{unique_filename}"
+        logger.info(f"图片已保存: {file_path}, URL: {image_url}")
+        
+        return {
+            "success": True,
+            "imageUrl": image_url,
+            "message": "上传成功"
+        }
+    except Exception as e:
+        logger.error(f"图片上传出错: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": f"上传失败：服务器处理错误 - {str(e)}"
+            }
+        )
+
+
+@app.post("/upload/reference-audio")
+async def upload_reference_audio(file: UploadFile = File(...)):
+    """
+    处理参考音频上传
+    """
+    logger.info(f"接收到参考音频上传: {file.filename}")
+    
+    # 检查文件类型
+    allowed_types = ["audio/wav", "audio/mpeg", "audio/mp3", "audio/x-wav"]
+    content_type = file.content_type
+    
+    if content_type not in allowed_types:
+        logger.warning(f"不支持的文件类型: {content_type}")
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "message": "上传失败：文件格式不支持，仅支持WAV、MP3格式"
+            }
+        )
+    
+    try:
+        # 生成唯一文件名
+        file_extension = os.path.splitext(file.filename)[1]
+        unique_filename = f"ref_{uuid.uuid4()}_{int(time.time())}{file_extension}"
+        file_path = AUDIO_DIR / unique_filename
+        
+        # 保存文件
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # 生成访问URL
+        audio_url = f"/static/audio/{unique_filename}"
+        logger.info(f"参考音频已保存: {file_path}, URL: {audio_url}")
+        
+        return {
+            "success": True,
+            "audioUrl": audio_url,
+            "message": "上传成功"
+        }
+    except Exception as e:
+        logger.error(f"参考音频上传出错: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": f"上传失败：服务器处理错误 - {str(e)}"
+            }
+        )
+
+
+@app.post("/upload/training-audio")
+async def upload_training_audio(file: UploadFile = File(...)):
+    """
+    处理训练音频上传
+    """
+    logger.info(f"接收到训练音频上传: {file.filename}")
+    
+    # 检查文件类型
+    allowed_types = ["audio/wav", "audio/mpeg", "audio/mp3", "audio/x-wav"]
+    content_type = file.content_type
+    
+    if content_type not in allowed_types:
+        logger.warning(f"不支持的文件类型: {content_type}")
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "message": "上传失败：文件格式不支持，仅支持WAV、MP3格式"
+            }
+        )
+    
+    try:
+        # 生成唯一文件名
+        file_extension = os.path.splitext(file.filename)[1]
+        unique_filename = f"train_{uuid.uuid4()}_{int(time.time())}{file_extension}"
+        file_path = AUDIO_DIR / unique_filename
+        
+        # 保存文件
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # 生成访问URL
+        audio_url = f"/static/audio/{unique_filename}"
+        logger.info(f"训练音频已保存: {file_path}, URL: {audio_url}")
+        
+        return {
+            "success": True,
+            "audioUrl": audio_url,
+            "message": "上传成功"
+        }
+    except Exception as e:
+        logger.error(f"训练音频上传出错: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": f"上传失败：服务器处理错误 - {str(e)}"
+            }
+        )
+
+
 def _ensure_required_fields(data: Dict[str, Any]):
     """确保数据中包含所有必要的字段，不存在则设置默认值"""
     if 'id' not in data:
@@ -345,6 +538,122 @@ def _ensure_required_fields(data: Dict[str, Any]):
         
     if 'phone' not in data or not data['phone']:
         data['phone'] = ''
+
+
+@app.put("/digital-humans/{digital_human_id}", response_model=DigitalHumanResponse)
+async def update_digital_human(
+    digital_human_id: str,
+    request: Request,
+    db: DatabaseManager = Depends(get_db)
+):
+    """
+    更新指定ID的数字人信息
+    """
+    logger.info(f"更新数字人 ID: {digital_human_id}")
+    
+    # 获取请求体数据
+    body = await request.body()
+    try:
+        update_data = json.loads(body)
+        logger.info(f"收到更新请求数据: {update_data}")
+    except Exception as e:
+        logger.error(f"解析请求数据失败: {e}", exc_info=True)
+        return DigitalHumanResponse(
+            success=False,
+            message="请求数据格式无效"
+        )
+    
+    # 检查是否是本地临时ID
+    if digital_human_id.startswith("local-") and digital_human_id in LOCAL_TEMP_DATA:
+        # 更新本地数据
+        for key, value in update_data.items():
+            LOCAL_TEMP_DATA[digital_human_id][key] = value
+        
+        # avatar和音频URL应该已经在前端通过上传接口获取
+        # 仅备份，以防有旧的处理方式，通常不会执行
+        if 'original_reference_audio_path' in update_data and update_data['original_reference_audio_path']:
+            reference_audio_url = copy_file_to_static(update_data['original_reference_audio_path'], AUDIO_DIR)
+            if reference_audio_url:
+                LOCAL_TEMP_DATA[digital_human_id]['referenceAudio'] = reference_audio_url
+        
+        if 'original_training_audio_path' in update_data and update_data['original_training_audio_path']:
+            training_audio_url = copy_file_to_static(update_data['original_training_audio_path'], AUDIO_DIR)
+            if training_audio_url:
+                LOCAL_TEMP_DATA[digital_human_id]['trainingAudio'] = training_audio_url
+        
+        updated_data = LOCAL_TEMP_DATA[digital_human_id]
+        
+        logger.info(f"本地更新后的数据: {updated_data}")
+        _ensure_required_fields(updated_data)
+        
+        return DigitalHumanResponse(
+            success=True,
+            message="更新数字人成功（本地模式）",
+            data=DigitalHuman(**updated_data)
+        )
+    
+    try:
+        # 检查数字人是否存在
+        existing_human = db.get_digital_human(int(digital_human_id))
+        if not existing_human:
+            logger.warning(f"数据库中不存在ID为{digital_human_id}的数字人")
+            return DigitalHumanResponse(
+                success=False,
+                message=f"ID为{digital_human_id}的数字人不存在"
+            )
+        
+        # avatar和音频URL应该已经在前端通过上传接口获取
+        # 仅备份，以防有旧的处理方式，通常不会执行
+        if 'original_reference_audio_path' in update_data and update_data['original_reference_audio_path']:
+            reference_audio_url = copy_file_to_static(update_data['original_reference_audio_path'], AUDIO_DIR)
+            if reference_audio_url:
+                update_data['referenceAudio'] = reference_audio_url
+        
+        if 'original_training_audio_path' in update_data and update_data['original_training_audio_path']:
+            training_audio_url = copy_file_to_static(update_data['original_training_audio_path'], AUDIO_DIR)
+            if training_audio_url:
+                update_data['trainingAudio'] = training_audio_url
+        
+        # 调用数据库更新方法
+        success = db.update_digital_human(int(digital_human_id), update_data)
+        if not success:
+            logger.error(f"更新ID为{digital_human_id}的数字人失败")
+            return DigitalHumanResponse(
+                success=False,
+                message="更新数字人失败"
+            )
+        
+        # 获取更新后的数据
+        updated_human = db.get_digital_human(int(digital_human_id))
+        if not updated_human:
+            logger.error(f"无法获取更新后的数字人信息")
+            return DigitalHumanResponse(
+                success=False,
+                message="获取更新后的数字人信息失败"
+            )
+        
+        # 确保所有必要字段存在
+        _ensure_required_fields(updated_human)
+        logger.info(f"更新后的数据: {updated_human}")
+        
+        return DigitalHumanResponse(
+            success=True,
+            message="更新数字人成功",
+            data=DigitalHuman(**updated_human)
+        )
+    except ValueError:
+        # 如果ID不是整数也不是有效的本地ID
+        logger.error(f"无效的ID格式: {digital_human_id}")
+        return DigitalHumanResponse(
+            success=False,
+            message=f"无效的ID格式: {digital_human_id}"
+        )
+    except Exception as e:
+        logger.error(f"更新数字人信息出错: {e}", exc_info=True)
+        return DigitalHumanResponse(
+            success=False,
+            message=f"更新数字人信息时发生错误"
+        )
 
 
 # 启动应用

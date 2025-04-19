@@ -10,8 +10,8 @@ class DigitalHumanBase(BaseModel):
     avatar: Optional[str] = Field(None, description="头像路径", alias="image_path")
     referenceAudio: Optional[str] = Field(None, description="参考音频路径", alias="reference_audio_path")
     trainingAudio: Optional[str] = Field(None, description="训练音频路径", alias="train_audio_path")
-    referenceAudioLength: Optional[str] = Field(None, description="参考音频长度")
-    trainingAudioLength: Optional[str] = Field(None, description="训练音频长度")
+    # referenceAudioLength: Optional[str] = Field(None, description="参考音频长度")
+    # trainingAudioLength: Optional[str] = Field(None, description="训练音频长度")
 
 
 class DigitalHumanCreate(DigitalHumanBase):
