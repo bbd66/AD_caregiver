@@ -17,26 +17,22 @@ class Settings(BaseSettings):
     # ==================== #
     #   Voice Service Config  #
     # ==================== #
-    SILICONFLOW_API_KEY: str                   # Required
-    SILICONFLOW_BASE_URL: HttpUrl = "https://api.siliconflow.cn/v1"
-    DEFAULT_VOICE_MODEL: str = "FunAudioLLM/CosyVoice2-0.5B"
-    DEFAULT_VOICE_NAME: str = "alex"           # alex | custom voices
-    VOICE_CACHE_DIR: str = "./voice_cache"     # Store generated audio files
+   TTS_API_KEY = "sk-swldhdfbzrwtesarrhxwbovcivpzezfshaxvcxrtwvdzylss"
+   TTS_BASE_URL = "https://api.siliconflow.cn/v1"
+
 
     # ==================== #
     #  Chat Engine Config   #
     # ==================== #
-    DEEPSEEK_API_KEY: str                      # Required
-    DEEPSEEK_API_URL: HttpUrl = "https://api.deepseek.com/v1/chat/completions"
-    DEEPSEEK_MODEL: str = "deepseek-chat"
-    CHAT_HISTORY_LIMIT: int = 10               # Max conversation turns
+    DEEPSEEK_API_KEY = "sk-7d54d72c0a314c45ae838b4ea422d152"   
+    DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
+
 
     # ==================== #
     #    Database Config    #
     # ==================== #
-    DATABASE_URI: str = "sqlite:///./digital_human.db"
-    DATABASE_ECHO: bool = False                # SQLAlchemy query logging
-    DATABASE_POOL_SIZE: int = 5
+    DATABASE_URI = "mysql+pymysql://root:@localhost/app_db"
+
 
     # ==================== #
     #      CORS Config      #
