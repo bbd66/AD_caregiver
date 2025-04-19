@@ -10,7 +10,11 @@ async def root():
 #      包含音频文件路径字段
 ​# 响应​：DigitalHumanResponse（含创建结果）
 @app.post("/digital-humans/", response_model=DigitalHumanResponse)
-async def create_digital_human(...)
+async def create_digital_human(
+    request: Request,
+    digital_human: DigitalHumanCreate,
+    db: DatabaseManager = Depends(get_db)
+):
 
 # ​功能​：获取数字人列表（支持分页/搜索）
 ​# 查询参数​：skip: 分页起始位置
