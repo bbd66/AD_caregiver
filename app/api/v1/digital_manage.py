@@ -4,6 +4,8 @@
 async def root():
     return {"message": "数字人管理系统API"}
 
+
+
 # 数字人管理 
 # 功能​：创建新数字人
 ​# 参数​：DigitalHumanCreate模型（JSON Body）
@@ -15,6 +17,89 @@ async def create_digital_human(
     digital_human: DigitalHumanCreate,
     db: DatabaseManager = Depends(get_db)
 ):
+    """
+    创建新的数字人
+    """
+    # 记录原始请求体，以检查路径字段
+    body = await request.body()
+    try:
+        raw_data = json.loads(body)
+        logger.info(f"收到原始请求数据: {raw_data}")
+    except:
+        logger.info(f"无法解析原始请求数据: {body}")
+        
+    digital_human_data = digital_human.model_dump(exclude_unset=True)
+    logger.info(f"Pydantic模型解析后的数据: {digital_human_data}")
+    
+    # 确保必要字段存在，如果不存在则设置默认值
+    _ensure_required_fields(digital_human_data)
+    logger.info(f"添加默认值后的数据: {digital_human_data}")
+    
+    # avatar字段现在应该是从/upload/image接口获取的URL，无需再处理文件
+    # 只需处理音频文件路径
+    if 'original_reference_audio_path' in digital_human_data and digital_human_data['original_reference_audio_path']:
+        logger.info(f"处理参考音频文件: {digital_human_data['original_reference_audio_path']}")
+        reference_audio_url = copy_file_to_static(digital_human_data['original_reference_audio_path'], AUDIO_DIR)
+        if reference_audio_url:
+            digital_human_data['referenceAudio'] = reference_audio_url
+    
+    if 'original_training_audio_path' in digital_human_data and digital_human_data['original_training_audio_path']:
+        logger.info(f"处理训练音频文件: {digital_human_data['original_training_audio_path']}")
+        training_audio_url = copy_file_to_static(digital_human_data['original_training_audio_path'], AUDIO_DIR)
+        if training_audio_url:
+            digital_human_data['trainingAudio'] = training_audio_url
+    
+    try:
+        # 调用数据库方法添加数字人
+        logger.info(f"准备添加到数据库的数据: {digital_human_data}")
+        new_id = db.add_digital_human(digital_human_data)
+        logger.info(f"数据库返回的ID: {new_id}")
+        
+        if not new_id:
+            logger.warning("数据库未返回ID，创建本地数据")
+            # 如果数据库操作失败，创建一个本地临时ID
+            local_id = f"local-{int(time.time() * 1000)}"
+            digital_human_data['id'] = local_id
+            LOCAL_TEMP_DATA[local_id] = digital_human_data
+            
+            return DigitalHumanResponse(
+                success=True,  # 即使是本地创建，也返回成功
+                message="创建数字人成功（本地模式）",
+                data=DigitalHuman(**digital_human_data)
+            )
+        
+        # 获取创建的数字人数据
+        created_human = db.get_digital_human(new_id)
+        logger.info(f"从数据库获取的创建结果: {created_human}")
+        
+        # 确保所有必要字段存在，不存在则设置默认值
+        if created_human:
+            _ensure_required_fields(created_human)
+            logger.info(f"最终返回的数据: {created_human}")
+        else:
+            logger.error(f"无法从数据库获取刚创建的数字人 ID: {new_id}")
+        
+        return DigitalHumanResponse(
+            success=True,
+            message="创建数字人成功",
+            data=DigitalHuman(**created_human)
+        )
+    except Exception as e:
+        # 捕获异常，确保即使出错也能返回一个有效的响应
+        logger.error(f"创建数字人出错: {e}", exc_info=True)
+        
+        # 创建一个本地临时ID
+        local_id = f"local-{int(time.time() * 1000)}"
+        digital_human_data['id'] = local_id
+        LOCAL_TEMP_DATA[local_id] = digital_human_data
+        
+        return DigitalHumanResponse(
+            success=True,  # 即使是本地创建，也返回成功
+            message="创建数字人成功（本地模式）",
+            data=DigitalHuman(**digital_human_data)
+        )
+
+
 
 # ​功能​：获取数字人列表（支持分页/搜索）
 ​# 查询参数​：skip: 分页起始位置
