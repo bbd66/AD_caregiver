@@ -1,16 +1,34 @@
 from fastapi import APIRouter
-from app.api.v1 import voice, deepseek
+from api.v1 import voice, deepseek, digital_manage, file_upload
 
-api_router = APIRouter(prefix="/api")  # 添加全局前缀
+api_router = APIRouter()  # Global router
 
-api_router.include_router(
+# API version 1 router
+v1_router = APIRouter(prefix="/v1")
+
+v1_router.include_router(
     voice.router, 
-    prefix="/v1/voice", 
+    prefix="/voice", 
     tags=["Voice Services"]
 )
 
-api_router.include_router(
+v1_router.include_router(
     deepseek.router, 
-    prefix="/v1/deepseek", 
+    prefix="/deepseek", 
     tags=["AI Chat"]
 )
+
+v1_router.include_router(
+    digital_manage.router, 
+    prefix="/digital", 
+    tags=["Digital Human Management"]
+)
+
+v1_router.include_router(
+    file_upload.router, 
+    prefix="/files", 
+    tags=["File Upload"]
+)
+
+# Include v1 router in the main API router
+api_router.include_router(v1_router, prefix="/api")

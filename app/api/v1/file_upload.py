@@ -1,8 +1,31 @@
+from fastapi import APIRouter, File, UploadFile
+from fastapi.responses import JSONResponse
+import os
+import uuid
+import time
+from pathlib import Path
+import logging
+from typing import Dict, Any
+
+# 创建路由器
+router = APIRouter()
+
+# 设置日志
+logger = logging.getLogger(__name__)
+
+# 设置上传目录
+AVATARS_DIR = Path("static/uploads/avatars")
+AUDIO_DIR = Path("static/audio")
+
+# 确保目录存在
+AVATARS_DIR.mkdir(parents=True, exist_ok=True)
+AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+
 # 文件上传
-# 功能​：上传数字人头像
-​# 文件类型​：JPG/PNG
-​# 返回​：图片访问URL
-@app.post("/upload/image")
+# 功能：上传数字人头像
+# 文件类型：JPG/PNG
+# 返回：图片访问URL
+@router.post("/upload/image")
 async def upload_image(file: UploadFile = File(...)):
     """
     处理图片上传
@@ -55,10 +78,10 @@ async def upload_image(file: UploadFile = File(...)):
 
 
 
-# 功能​：上传参考音频
-​# 文件类型​：WAV/MP3
-​# 返回​：音频访问URL
-@app.post("/upload/reference-audio")
+# 功能：上传参考音频
+# 文件类型：WAV/MP3
+# 返回：音频访问URL
+@router.post("/upload/reference-audio")
 async def upload_reference_audio(file: UploadFile = File(...)):
     """
     处理参考音频上传
@@ -111,10 +134,10 @@ async def upload_reference_audio(file: UploadFile = File(...)):
 
 
 
-# ​功能​：上传训练音频
-​# 文件类型​：WAV/MP3
-​# 返回​：音频访问URL
-@app.post("/upload/training-audio")
+# 功能：上传训练音频
+# 文件类型：WAV/MP3
+# 返回：音频访问URL
+@router.post("/upload/training-audio")
 async def upload_training_audio(file: UploadFile = File(...)):
     """
     处理训练音频上传

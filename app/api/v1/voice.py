@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException
-from app.schemas.voice import VoiceTrainRequest, VoiceTrainResponse, VoiceGenerateRequest, VoiceGenerateResponse
-from app.services.voice import voice_service
+from schemas.voice import VoiceTrainRequest, VoiceTrainResponse, VoiceGenerateRequest, VoiceGenerateResponse
+from services.voice import voice_service
 
 router = APIRouter()
 

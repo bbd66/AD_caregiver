@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, F
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import datetime
+from core.config import settings
 
 # 配置日志
 logger = logging.getLogger("digital_human_db")
@@ -64,11 +65,12 @@ class AudioFile(Base):
     digital_human = relationship("DigitalHuman", back_populates="audio_files")
 
 # 创建会话工厂
-Session = sessionmaker(bind=create_engine("mysql+pymysql://root:@localhost/app_db"))
+engine_url = settings.DATABASE_URI
+Session = sessionmaker(bind=create_engine(engine_url))
 
 class DatabaseManager:
-    def __init__(self, host='localhost', user='root', password='', 
-                 db='app_db', port=3306, charset='utf8mb4'):
+    def __init__(self, host=settings.DB_HOST, user=settings.DB_USER, password=settings.DB_PASSWORD, 
+                 db=settings.DB_NAME, port=settings.DB_PORT, charset=settings.DB_CHARSET):
         """初始化数据库连接"""
         self.connection_params = {
             'host': host,
@@ -80,12 +82,16 @@ class DatabaseManager:
         }
         self.connection = None
         self.cursor = None
+        
+        # 记录连接参数（不包含密码）
+        logger.info(f"数据库连接参数: host={host}, user={user}, db={db}, port={port}")
     
     def connect(self):
         """连接到数据库"""
         try:
             self.connection = pymysql.connect(**self.connection_params)
             self.cursor = self.connection.cursor(pymysql.cursors.DictCursor)
+            logger.info("数据库连接成功")
             return True
         except Exception as e:
             logger.error(f"数据库连接失败: {e}", exc_info=True)

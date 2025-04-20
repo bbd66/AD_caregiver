@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from app.schemas.deepseek import DeepSeekRequest, DeepSeekResponse
-from app.services.deepseek import deepseek_service
+from schemas.deepseek import DeepSeekRequest, DeepSeekResponse
+from services.deepseek import deepseek_service
 
 router = APIRouter()
 
