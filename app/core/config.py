@@ -33,10 +33,10 @@ class Settings(BaseSettings):
     # ==================== #
     #    Database Config    #
     # ==================== #
-    DATABASE_URI: str = "mysql+pymysql://root:Hh000412@localhost/app_db"
+    DATABASE_URI: str = "mysql+pymysql://root:050729@localhost/app_db"
     DB_HOST: str = "localhost"
     DB_USER: str = "root"
-    DB_PASSWORD: str = "Hh000412"
+    DB_PASSWORD: str = "050729"
     DB_NAME: str = "app_db"
     DB_PORT: int = 3306
     DB_CHARSET: str = "utf8mb4"
