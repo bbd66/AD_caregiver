@@ -15,8 +15,10 @@ async def train_custom_voice(
     try:
 
         result = await voice_service.upload_and_train(
-        request.audio_url,
-        id=request.dh_id
+        audio_url=request.audio_url,
+        id=request.dh_id,
+        custom_name=request.custom_name,
+        modle=request.model
         )
 
         return {result.status_code} # 200即为成功
@@ -31,8 +33,7 @@ async def generate_voice_audio(request: VoiceGenerateRequest):
             id=request.dh_id
         )
         return {
-            "audio_url": result["audio_url"]
+            "audio_url": result['url']
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
