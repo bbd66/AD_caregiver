@@ -4,6 +4,8 @@ class VoiceTrainRequest(BaseModel):
     model: str = "FunAudioLLM/CosyVoice2-0.5B"
     custom_name: str
     text: str
+    audio_url:str
+    dh_id:str
 
 class VoiceTrainResponse(BaseModel):
     task_id: str
@@ -11,8 +13,8 @@ class VoiceTrainResponse(BaseModel):
     message: str
 
 class VoiceGenerateRequest(BaseModel):
-    text: str
-    model_name: str
+    dh_id:str
+    audio_url:str
 
 class VoiceGenerateResponse(BaseModel):
     audio_url: str
