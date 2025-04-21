@@ -274,6 +274,9 @@ class DigitalManageService:
             
         if 'phone' not in data or not data['phone']:
             data['phone'] = ''
+            
+        if 'user_id' not in data or not data['user_id']:
+            data['user_id'] = 1  # 设置默认用户ID为1，可以根据实际需求调整
 
 # 创建服务实例
 digital_manage_service = DigitalManageService() 
