@@ -271,6 +271,8 @@ class DatabaseManager:
         Returns:
             Dict: 格式化后的记录
         """
+        logger.info(f"开始格式化数字人响应，原始数据: {db_record}")
+        
         # 字段名称映射（数据库字段 -> 前端字段）
         field_mapping = {
             'image_path': 'avatar',
@@ -300,7 +302,15 @@ class DatabaseManager:
             
         if 'avatar' not in formatted_record or not formatted_record['avatar']:
             formatted_record['avatar'] = ''
+            
+        # 确保video_path字段存在，即使为空
+        if 'video_path' not in formatted_record:
+            logger.info("video_path字段不存在，设置为空字符串")
+            formatted_record['video_path'] = ''
+        else:
+            logger.info(f"video_path字段已存在，值为: {formatted_record['video_path']}")
         
+        logger.info(f"格式化后的完整响应数据: {formatted_record}")
         return formatted_record
     
     def get_all_digital_humans(self) -> List[Dict]:

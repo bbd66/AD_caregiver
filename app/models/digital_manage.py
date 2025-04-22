@@ -7,10 +7,14 @@ class DigitalHumanBase(BaseModel):
     name: str = Field(..., description="数字人名称")
     phone: Optional[str] = Field(None, description="联系电话")
     description: Optional[str] = Field(None, description="描述信息")
-    avatar: Optional[str] = Field(None, description="头像路径")
-    referenceAudio: Optional[str] = Field(None, description="参考音频路径")
-    trainingAudio: Optional[str] = Field(None, description="训练音频路径")
+    avatar: Optional[str] = Field(None, description="头像路径", alias="image_path")
+    referenceAudio: Optional[str] = Field(None, description="参考音频路径", alias="reference_audio_path")
+    trainingAudio: Optional[str] = Field(None, description="训练音频路径", alias="train_audio_path")
+    video_path: Optional[str] = Field(None, description="视频路径")
     user_id: Optional[int] = Field(None, description="用户ID")
+
+    class Config:
+        populate_by_name = True
 
 
 class DigitalHumanCreate(DigitalHumanBase):

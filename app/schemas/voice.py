@@ -18,4 +18,4 @@ class VoiceGenerateRequest(BaseModel):
 
 class VoiceGenerateResponse(BaseModel):
     audio_url: str
-    duration: float 
+    duration: float = 0.0 
