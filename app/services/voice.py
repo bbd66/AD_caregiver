@@ -125,7 +125,7 @@ class VoiceService:
             text_res=await deepseek_service.get_response(final_result)#接入ds得到回答
             #voice_uri=
             db_manager = app_db.DatabaseManager()
-            voice_uri=db_manager.get_digital_human(id)
+            digital_human = db_manager.get_digital_human(id)
 
             data = {"text": text_res, "model": model_name}
             client =  AsyncOpenAI(
@@ -150,7 +150,7 @@ class VoiceService:
             # )
             async with client.audio.speech.with_streaming_response.create(
             model=model_name,
-            voice=voice_uri['video_path'],#"FunAudioLLM/CosyVoice2-0.5B:alex"
+            voice="FunAudioLLM/CosyVoice2-0.5B:alex",#"FunAudioLLM/CosyVoice2-0.5B:alex"  digital_human['video_path']
             input=text_res,
             response_format="mp3"
              ) as response:  
@@ -165,7 +165,8 @@ class VoiceService:
 
             if not await asyncio.to_thread(os.path.exists, absolute_path):
                     raise HTTPException(500, "文件保存失败")
-
+            
+            db_manager = app_db.DatabaseManager()
             result = db_manager.save_audio_to_database(
                     filename=filename,
                     filepath=relative_path,
