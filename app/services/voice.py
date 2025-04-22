@@ -150,7 +150,7 @@ class VoiceService:
             # )
             async with client.audio.speech.with_streaming_response.create(
             model=model_name,
-            voice="FunAudioLLM/CosyVoice2-0.5B:alex",#"FunAudioLLM/CosyVoice2-0.5B:alex"  digital_human['video_path']
+            voice=digital_human['video_path'],#"FunAudioLLM/CosyVoice2-0.5B:alex"  digital_human['video_path']
             input=text_res,
             response_format="mp3"
              ) as response:  
