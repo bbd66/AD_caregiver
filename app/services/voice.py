@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, Any, Tuple, List, Optional
 import datetime
 from core.config import settings
-from web_app import app, get_all_digital_humans, get_digital_human, save_audio_to_database, save_chat_to_database, Document
+#from web_app import app, get_all_digital_humans, get_digital_human, save_audio_to_database, save_chat_to_database, Document
 from vosk import Model, KaldiRecognizer
 import wave
 import json
@@ -48,36 +48,36 @@ class VoiceService:
 
         audio_bytes = io.BytesIO(file_content)
     
-        # 2. 打开音频文件
-        # with wave.open(audio_bytes, "rb") as wf:
-        #     if wf.getnchannels() != 1:
-        #         raise ValueError("需要单声道音频")
-        #     if wf.getsampwidth() != 2:
-        #         raise ValueError("需要16-bit位深")
-        #     if wf.getframerate() != 16000:
-        #         raise ValueError("需要16kHz采样率")
+        with wave.open(io.BytesIO(file_content), 'rb') as wf:
+        # 参数校验（关键！）
+          if wf.getnchannels() != 1:
+              raise ValueError("需要单声道音频")
+          if wf.getsampwidth() != 2:
+              raise ValueError("需要16-bit位深")
+          if wf.getframerate() != 16000:
+              raise ValueError("需要16kHz采样率")
 
         # # 4. 创建识别器
         sample_rate = 16000
         recognizer = KaldiRecognizer(model, sample_rate)
         
-        # while True:
-        #         data = wf.readframes(4000)
-        #         if not data:
-        #             break
-        #         if recognizer.AcceptWaveform(data):
-        #             result = json.loads(recognizer.Result())
-        #             full_text.append(result.get("text", ""))
+        while True:
+                data = wf.readframes(4000)
+                if not data:
+                    break
+                if recognizer.AcceptWaveform(data):
+                    result = json.loads(recognizer.Result())
+                    full_text.append(result.get("text", ""))
 
-        # final_result = json.loads(recognizer.FinalResult())
-        # full_text.append(final_result.get("text", ""))
+        final_result = json.loads(recognizer.FinalResult())
+        full_text.append(final_result.get("text", ""))
 
-        # return "".join(full_text)
+        return "".join(full_text)
            
-        if recognizer.AcceptWaveform(file_content):      # 关键识别调用
-            result = json.loads(recognizer.Result())   # 获取识别结果
-            text = result.get('text', '')  # 提取文本内容，文件类型为txt
-        
+        # if recognizer.AcceptWaveform(file_content):      # 关键识别调用
+        #     result = json.loads(recognizer.Result())   # 获取识别结果
+        #     text = result.get('text', '')  # 提取文本内容，文件类型为txt
+        print(text)
         return text
 
     
@@ -123,8 +123,9 @@ class VoiceService:
             final_result =  await self.transcribe_audio_file(audio_url)#识别成文字
 
             text_res=await deepseek_service.get_response(final_result)#接入ds得到回答
-            
-            voice_uri=get_digital_human(id)
+            #voice_uri=
+            db_manager = app_db.DatabaseManager()
+            voice_uri=db_manager.get_digital_human(id)
 
             data = {"text": text_res, "model": model_name}
             client =  AsyncOpenAI(
@@ -165,7 +166,7 @@ class VoiceService:
             if not await asyncio.to_thread(os.path.exists, absolute_path):
                     raise HTTPException(500, "文件保存失败")
 
-            result = save_audio_to_database(
+            result = db_manager.save_audio_to_database(
                     filename=filename,
                     filepath=relative_path,
                     digital_human_id=id,
