@@ -246,6 +246,15 @@ class VoiceService:
             logging.info("===== generate_audio 方法开始 =====")
             logging.info(f"输入参数: audio_url={audio_url}, id={id}, model_name={model_name}")
             
+            # 3. 获取数字人信息  把数字人的获取提前到这里
+            logging.info(f"获取数字人信息: id={id}")
+            db_manager = app_db.DatabaseManager()
+            digital_human = db_manager.get_digital_human(id)
+            if not digital_human:
+                logging.error(f"数字人不存在: id={id}")
+                raise HTTPException(status_code=404, detail="数字人不存在")
+            description=digital_human['description'] #获取参考信息
+
             async with httpx.AsyncClient() as client:
                 # 1. 转录音频
                 logging.info(f"开始转录音频文件: {audio_url}")
@@ -258,19 +267,13 @@ class VoiceService:
                 # 2. 获取AI回复
                 logging.info("开始获取AI回复")
                 logging.info(f"发送到deepseek的文本: {final_result}")
-                text_res = await deepseek_service.get_response(final_result)
+                logging.info(f"发送到deepseek的参考: {description}")
+
+                text_res = await deepseek_service.get_response(description,final_result)
                 if not text_res:
                     logging.error("AI回复为空")
                     raise HTTPException(status_code=400, detail="AI回复为空")
                 logging.info(f"AI回复内容: {text_res}")
-
-                # 3. 获取数字人信息
-                logging.info(f"获取数字人信息: id={id}")
-                db_manager = app_db.DatabaseManager()
-                digital_human = db_manager.get_digital_human(id)
-                if not digital_human:
-                    logging.error(f"数字人不存在: id={id}")
-                    raise HTTPException(status_code=404, detail="数字人不存在")
                 
                 if not digital_human.get('video_path'):
                     logging.error(f"数字人音色未设置: id={id}")

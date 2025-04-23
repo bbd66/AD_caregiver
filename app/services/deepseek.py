@@ -10,17 +10,19 @@ class DeepseekService:
             "Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}"
         }
     
-    async def get_response(self, user_input: str) -> str:
+    async def get_response(self,description: str, user_input: str) -> str:
         """
         调用DeepSeek API获取回复
         """
         try:
             logging.info("===== deepseek get_response 方法开始 =====")
             logging.info(f"输入参数: user_input={user_input}")
+            logging.info(f"输入参考: description={description}")
             
             payload = {
                 "model": "deepseek-chat",
                 "messages": [
+                    {"role": "system", "content": description},
                     {"role": "user", "content": user_input}
                 ],
                 "temperature": 0.7,
