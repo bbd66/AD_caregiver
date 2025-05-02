@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Login Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: row;
+        }
+        
+        .container {
+            width: 375px;
+            height: 667px;
+            background-color: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+            border-radius: 20px;
+            margin: 20px;
+        }
+        
+        .design-notes {
+            width: 450px;
+            padding: 30px;
+            font-size: 14px;
+            background-color: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            margin: 20px;
+            max-height: 667px;
+            overflow-y: auto;
+        }
+        
+        .design-notes h2, .design-notes h3 {
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        
+        .design-notes h2 {
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 8px;
+        }
+        
+        .design-notes p {
+            margin-bottom: 12px;
+        }
+        
+        .design-notes ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .login-header {
+            padding: 40px 30px 20px;
+            text-align: center;
+        }
+        
+        .app-logo {
+            width: 80px;
+            height: 80px;
+            background-color: #3498db;
+            border-radius: 20px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .app-logo svg {
+            width: 50px;
+            height: 50px;
+            fill: white;
+        }
+        
+        .welcome-text {
+            margin-bottom: 10px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #222;
+        }
+        
+        .login-subtext {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        
+        .login-form {
+            padding: 0 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .form-group svg {
+            position: absolute;
+            left: 15px;
+            top: 17px;
+            width: 18px;
+            height: 18px;
+            fill: #95a5a6;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: none;
+            background-color: #f5f7fa;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s;
+            color: #333;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #3498db;
+            background-color: #fff;
+        }
+        
+        .form-input::placeholder {
+            color: #95a5a6;
+        }
+        
+        .options-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        
+        .remember-me {
+            display: flex;
+            align-items: center;
+        }
+        
+        .remember-checkbox {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #bdc3c7;
+            border-radius: 4px;
+            margin-right: 8px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .remember-checkbox:checked {
+            background-color: #3498db;
+            border-color: #3498db;
+        }
+        
+        .remember-checkbox:checked:after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        
+        .forgot-password {
+            color: #3498db;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .forgot-password:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 6px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .login-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 30px 0;
+            color: #95a5a6;
+            font-size: 13px;
+        }
+        
+        .divider:before, .divider:after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background-color: #ecf0f1;
+        }
+        
+        .divider:before {
+            margin-right: 10px;
+        }
+        
+        .divider:after {
+            margin-left: 10px;
+        }
+        
+        .social-login {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .social-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #f5f7fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .social-btn:hover {
+            background-color: #ecf0f1;
+            transform: translateY(-3px);
+        }
+        
+        .signup-text {
+            text-align: center;
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 10px;
+        }
+        
+        .signup-link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+        
+        .signup-link:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+        
+        .design-note-point {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-header">
+            <div class="app-logo">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7z"/>
+                </svg>
+            </div>
+            <h1 class="welcome-text">欢迎回来</h1>
+            <p class="login-subtext">请登录您的账号继续</p>
+        </div>
+        
+        <form class="login-form">
+            <div class="form-group">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                <input type="text" class="form-input" placeholder="用户名 / 手机号" required>
+            </div>
+            
+            <div class="form-group">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                </svg>
+                <input type="password" class="form-input" placeholder="密码" required>
+            </div>
+            
+            <div class="options-row">
+                <label class="remember-me">
+                    <input type="checkbox" class="remember-checkbox">
+                    <span>记住我</span>
+                </label>
+                <a href="#" class="forgot-password">忘记密码?</a>
+            </div>
+            
+            <button type="submit" class="login-btn">登 录</button>
+            
+            <div class="divider">或者</div>
+            
+            <div class="signup-text">
+                还没有账号? <a href="#" class="signup-link">立即注册</a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="design-notes">
+        <h2>登录页面设计说明</h2>
+        
+        <div class="design-note-point">
+            <h3>整体设计理念</h3>
+            <p>该登录页采用了简约现代的设计风格，以蓝色作为主色调，体现科技感和专业性。整体布局清晰，视觉层次分明，让用户能直观地完成登录操作。</p>
+        </div>
+        
+        <div class="design-note-point">
+            <h3>视觉元素</h3>
+            <ul>
+                <li><strong>色彩：</strong>主色调使用#3498db蓝色，给人以信任感和科技感，同时搭配白色和浅灰色背景，保持界面清爽。</li>
+                <li><strong>排版：</strong>字体选用无衬线字体，提高易读性。标题24px加粗，副标题14px，保持层次感。</li>
+                <li><strong>圆角设计：</strong>所有交互元素使用12px圆角，使界面更加友好柔和。</li>
+                <li><strong>阴影效果：</strong>适当添加阴影，增加界面的立体感，提升用户体验。</li>
+            </ul>
+        </div>
+        
+        <div class="design-note-point">
+            <h3>交互设计</h3>
+            <ul>
+                <li><strong>输入框：</strong>带有图标前缀，增强可识别性；聚焦时添加蓝色边框强调。</li>
+                <li><strong>按钮：</strong>采用填充式设计，尺寸足够大(16px内边距)方便触摸，点击时有缩放反馈。</li>
+                <li><strong>复选框：</strong>自定义样式，选中状态明显，增强用户体验。</li>
+                <li><strong>过渡动效：</strong>所有交互元素添加平滑过渡动画，使交互更加自然。</li>
+            </ul>
+        </div>
+        
+        <div class="design-note-point">
+            <h3>用户体验考量</h3>
+            <ul>
+                <li><strong>一目了然：</strong>所有功能在一屏内完成，无需滚动。</li>
+                <li><strong>便捷操作：</strong>提供"记住我"选项和"忘记密码"链接，增加用户便利性。</li>
+                <li><strong>注册引导：</strong>底部添加注册入口，引导新用户快速注册。</li>
+                <li><strong>视觉反馈：</strong>所有可点击元素都有悬停和点击状态变化，增强交互感知。</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html> 
