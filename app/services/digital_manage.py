@@ -83,15 +83,26 @@ class DigitalManageService:
             
             return True, digital_human_data, "创建数字人成功（本地模式）"
     
-    def get_digital_humans(self, skip: int, limit: int, search: Optional[str], db) -> Tuple[List[Dict[str, Any]], int]:
-        """获取数字人列表，支持分页和搜索"""
+    def get_digital_humans(self, skip: int, limit: int, search: Optional[str], user_id: Optional[int], db) -> Tuple[List[Dict[str, Any]], int]:
+        """获取数字人列表，支持分页和搜索
+        
+        Args:
+            skip: 分页起始位置
+            limit: 每页数量
+            search: 搜索关键词（可选）
+            user_id: 用户ID（可选）
+            db: 数据库连接
+            
+        Returns:
+            Tuple[List[Dict], int]: 包含数字人列表和总数的元组
+        """
         try:
             if search:
                 # 使用搜索功能
-                humans, total = db.search_digital_humans(search, skip, limit)
+                humans, total = db.search_digital_humans(search, skip, limit, user_id)
             else:
                 # 使用分页功能
-                humans, total = db.get_digital_humans_with_pagination(skip, limit)
+                humans, total = db.get_digital_humans_with_pagination(skip, limit, user_id)
             
             # 确保每条记录都有必要的字段
             for human in humans:
@@ -100,6 +111,9 @@ class DigitalManageService:
             # 添加临时创建的本地数据（如果有）
             local_humans = list(LOCAL_TEMP_DATA.values())
             if local_humans and not search:  # 在搜索模式下不添加本地数据
+                # 如果指定了user_id，只添加该用户的本地数据
+                if user_id is not None:
+                    local_humans = [h for h in local_humans if h.get('user_id') == user_id]
                 total += len(local_humans)
                 if skip < len(local_humans):
                     # 只添加在当前分页范围内的本地数据
@@ -114,6 +128,8 @@ class DigitalManageService:
             logger.error(f"获取数字人列表出错: {e}", exc_info=True)
             # 返回本地数据作为备份
             local_humans = list(LOCAL_TEMP_DATA.values())
+            if user_id is not None:
+                local_humans = [h for h in local_humans if h.get('user_id') == user_id]
             return local_humans, len(local_humans)
     
     def get_digital_human(self, digital_human_id: str, db) -> Tuple[bool, Dict[str, Any], str]:
@@ -274,9 +290,6 @@ class DigitalManageService:
             
         if 'phone' not in data or not data['phone']:
             data['phone'] = ''
-            
-        if 'user_id' not in data or not data['user_id']:
-            data['user_id'] = 1  # 设置默认用户ID为1，可以根据实际需求调整
 
 # 创建服务实例
 digital_manage_service = DigitalManageService() 
