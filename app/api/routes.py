@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from api.v1 import voice, deepseek, digital_manage, file_upload
+from api.v1 import voice, deepseek, digital_manage, file_upload, document
 
 api_router = APIRouter()  # Global router
 
@@ -28,6 +28,12 @@ v1_router.include_router(
     file_upload.router, 
     prefix="/files", 
     tags=["File Upload"]
+)
+
+v1_router.include_router(
+    document.router, 
+    prefix="/documents", 
+    tags=["Documents File"]
 )
 
 # Include v1 router in the main API router
