@@ -635,6 +635,39 @@ class DatabaseManager:
             return {'success': False, 'error': str(e)}
         finally:
             session.close()
+            
+    # __5.04 邹丰蔚更新，目的是为了检索聊天记录
+    def get_documents_by_user_id(self, user_id: int) -> List[Dict]:
+        """获取指定用户的所有文档记录
+    
+        Args:
+            user_id: 用户ID
+        
+        Returns:
+            List[Dict]: 包含文档信息的列表，按创建时间倒序排列
+        """
+        query = """
+            SELECT id, title, filepath, 
+                   upload_time, digital_human_id, user_id 
+            FROM document 
+            WHERE user_id = %s
+            ORDER BY upload_time DESC
+        """
+        results = self.execute_query(query, (user_id,))
+        return [self._format_document_response(record) for record in results] if results else []
+
+    def _format_document_response(self, record: Dict) -> Dict:
+        """格式化文档记录响应"""
+        return {
+            "id": record["id"],
+            "title": record["title"],
+            "file_url": f"/{record['filepath']}",  # 生成完整访问URL
+            "upload_time": record["upload_time"].strftime("%Y-%m-%d %H:%M:%S"),
+            "digital_human_id": record["digital_human_id"],
+            "user_id": record["user_id"]
+            } 
+    
+    # __5.04 更新至此
 
 
 # 使用示例
