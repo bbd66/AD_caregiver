@@ -34,17 +34,23 @@ async def root():
 
 # 数字人管理 
 # 功能：创建新数字人
+# 路径参数：user_id: 用户ID
 # 参数：DigitalHumanCreate模型（JSON Body）
 #      包含音频文件路径字段
 # 响应：DigitalHumanResponse（含创建结果）
-@router.post("/digital-humans/", response_model=DigitalHumanResponse)
+@router.post("/digital-humans/{user_id}", response_model=DigitalHumanResponse)
 async def create_digital_human(
+    user_id: int,
     request: Request,
     digital_human: DigitalHumanCreate,
     db: DatabaseManager = Depends(get_db)
 ):
     """
-    创建新的数字人
+    为指定用户创建新的数字人
+    
+    根据用户角色判断：
+    - 管理员：可以创建自己的数字人
+    - 患者：会创建到绑定的管理员名下
     """
     # 记录原始请求体，以检查路径字段
     body = await request.body()
@@ -57,6 +63,22 @@ async def create_digital_human(
     digital_human_data = digital_human.model_dump(exclude_unset=True)
     logger.info(f"Pydantic模型解析后的数据: {digital_human_data}")
     
+    # 获取用户角色
+    role = db.get_user_role(user_id)
+    if role == 'admin':
+        # 管理员直接使用自己的user_id
+        digital_human_data['user_id'] = user_id
+    else:
+        # 患者使用绑定的管理员的user_id
+        admin_id = db.get_bound_admin_id(user_id)
+        if admin_id is None:
+            return DigitalHumanResponse(
+                success=False,
+                message="未找到绑定的管理员，无法创建数字人",
+                data=None
+            )
+        digital_human_data['user_id'] = admin_id
+    
     # 调用服务层进行处理
     success, data, message = digital_manage_service.create_digital_human(digital_human_data, db)
     
@@ -67,21 +89,27 @@ async def create_digital_human(
     )
 
 # 功能：获取数字人列表（支持分页/搜索）
+# 路径参数：user_id: 用户ID
 # 查询参数：skip: 分页起始位置
 #          limit: 每页数量（1-100）
 #          search: 搜索关键词
 # 响应：DigitalHumanListResponse（含分页结果）
-@router.get("/digital-humans/", response_model=DigitalHumanListResponse)
+@router.get("/digital-humans/{user_id}", response_model=DigitalHumanListResponse)
 async def list_digital_humans(
+    user_id: int,
     skip: int = Query(0, ge=0, description="分页起始位置"),
     limit: int = Query(10, ge=1, le=100, description="每页数量"),
     search: Optional[str] = Query(None, description="搜索关键词"),
     db: DatabaseManager = Depends(get_db)
 ):
     """
-    获取数字人列表，支持分页和搜索
+    获取指定用户的数字人列表，支持分页和搜索
+    
+    根据用户角色返回不同的数字人列表：
+    - 管理员：返回自己创建的数字人
+    - 患者：返回绑定的管理员创建的数字人
     """
-    humans, total = digital_manage_service.get_digital_humans(skip, limit, search, db)
+    humans, total = digital_manage_service.get_digital_humans(skip, limit, search, user_id, db)
     
     return DigitalHumanListResponse(
         success=True,
