@@ -34,23 +34,17 @@ async def root():
 
 # 数字人管理 
 # 功能：创建新数字人
-# 路径参数：user_id: 用户ID
 # 参数：DigitalHumanCreate模型（JSON Body）
 #      包含音频文件路径字段
 # 响应：DigitalHumanResponse（含创建结果）
-@router.post("/digital-humans/{user_id}", response_model=DigitalHumanResponse)
+@router.post("/digital-humans/", response_model=DigitalHumanResponse)
 async def create_digital_human(
-    user_id: int,
     request: Request,
     digital_human: DigitalHumanCreate,
     db: DatabaseManager = Depends(get_db)
 ):
     """
-    为指定用户创建新的数字人
-    
-    根据用户角色判断：
-    - 管理员：可以创建自己的数字人
-    - 患者：会创建到绑定的管理员名下
+    创建新的数字人
     """
     # 记录原始请求体，以检查路径字段
     body = await request.body()
@@ -62,22 +56,6 @@ async def create_digital_human(
         
     digital_human_data = digital_human.model_dump(exclude_unset=True)
     logger.info(f"Pydantic模型解析后的数据: {digital_human_data}")
-    
-    # 获取用户角色
-    role = db.get_user_role(user_id)
-    if role == 'admin':
-        # 管理员直接使用自己的user_id
-        digital_human_data['user_id'] = user_id
-    else:
-        # 患者使用绑定的管理员的user_id
-        admin_id = db.get_bound_admin_id(user_id)
-        if admin_id is None:
-            return DigitalHumanResponse(
-                success=False,
-                message="未找到绑定的管理员，无法创建数字人",
-                data=None
-            )
-        digital_human_data['user_id'] = admin_id
     
     # 调用服务层进行处理
     success, data, message = digital_manage_service.create_digital_human(digital_human_data, db)
@@ -104,10 +82,6 @@ async def list_digital_humans(
 ):
     """
     获取指定用户的数字人列表，支持分页和搜索
-    
-    根据用户角色返回不同的数字人列表：
-    - 管理员：返回自己创建的数字人
-    - 患者：返回绑定的管理员创建的数字人
     """
     humans, total = digital_manage_service.get_digital_humans(skip, limit, search, user_id, db)
     
@@ -122,17 +96,19 @@ async def list_digital_humans(
 
 # 功能：获取单个数字人详情
 # 路径参数：
+# user_id: 用户ID
 # digital_human_id: 数字人ID（支持local-前缀的临时ID）
 # 响应：DigitalHumanResponse
-@router.get("/digital-humans/{digital_human_id}", response_model=DigitalHumanResponse)
+@router.get("/digital-humans/{user_id}/{digital_human_id}", response_model=DigitalHumanResponse)
 async def get_digital_human(
+    user_id: int,
     digital_human_id: str,
     db: DatabaseManager = Depends(get_db)
 ):
     """
-    获取指定ID的数字人
+    获取指定用户的指定ID的数字人
     """
-    success, data, message = digital_manage_service.get_digital_human(digital_human_id, db)
+    success, data, message = digital_manage_service.get_digital_human(digital_human_id, user_id, db)
     
     return DigitalHumanResponse(
         success=success,
