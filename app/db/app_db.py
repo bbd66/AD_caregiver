@@ -23,6 +23,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     digital_humans = relationship("DigitalHuman", backref="owner")
 
+# 5.05 邓博文更新
 class DigitalHuman(Base):
     __tablename__ = 'digital_human'
 
@@ -36,8 +37,11 @@ class DigitalHuman(Base):
     video_path = Column(String(500))
     patient_info_path = Column(String(500))
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    gender = Column(String(10))
+    age = Column(Integer)
     documents = relationship("Document", back_populates="digital_human")
     audio_files = relationship("AudioFile", back_populates="digital_human")
+# 更新至此
 
 class Document(Base):
     __tablename__ = 'document'
@@ -63,7 +67,7 @@ class AudioFile(Base):
     upload_time = Column(DateTime, default=datetime.datetime.utcnow)
     digital_human_id = Column(Integer, ForeignKey('digital_human.id'))
     digital_human = relationship("DigitalHuman", back_populates="audio_files")
-
+    
 # 创建会话工厂
 engine_url = settings.DATABASE_URI
 Session = sessionmaker(bind=create_engine(engine_url))
@@ -131,7 +135,8 @@ class DatabaseManager:
             if self.connection:
                 self.connection.rollback()
             return None
-    
+
+    #5.05邓博文更新
     def add_digital_human(self, digital_human_data: Dict[str, Any]) -> Optional[int]:
         """添加数字人记录
         
@@ -194,11 +199,11 @@ class DatabaseManager:
         values = []
         params = []
         
-        # 有效的数据库字段列表
+       # 有效的数据库字段列表
         valid_fields = [
             'name', 'phone', 'description', 'user_id',
             'reference_audio_path', 'train_audio_path', 'image_path',
-            'video_path', 'patient_info_path'
+            'video_path', 'patient_info_path', 'gender', 'age'
         ]
         
         for field, value in formatted_data.items():
@@ -224,6 +229,7 @@ class DatabaseManager:
             return last_id
         logger.error("插入失败，未能获取ID")
         return None
+
     
     def delete_digital_human(self, digital_human_id: int) -> bool:
         """删除数字人记录
@@ -234,15 +240,82 @@ class DatabaseManager:
         Returns:
             bool: 删除成功返回True，否则返回False
         """
-        query = "SELECT COUNT(*) as count FROM digital_human WHERE id = %s"
+        # 首先获取数字人的所有文件路径
+        query = """
+            SELECT 
+                image_path, 
+                reference_audio_path, 
+                train_audio_path, 
+                video_path,
+                patient_info_path
+            FROM digital_human 
+            WHERE id = %s
+        """
         result = self.execute_query(query, (digital_human_id,))
-        if result is None or result[0]['count'] == 0:
+        if result is None or len(result) == 0:
             logger.warning(f"数据库中不存在ID为{digital_human_id}的数字人")
             return False
-    
+            
+        # 获取文件路径
+        file_paths = result[0]
+        
+        # 获取关联的文档和音频文件
+        doc_query = "SELECT filepath FROM document WHERE digital_human_id = %s"
+        audio_query = "SELECT filepath FROM audio_file WHERE digital_human_id = %s"
+        
+        doc_results = self.execute_query(doc_query, (digital_human_id,))
+        audio_results = self.execute_query(audio_query, (digital_human_id,))
+        
+        # 收集所有需要删除的文件路径
+        all_file_paths = []
+        
+        # 添加数字人主文件
+        for path in file_paths.values():
+            if path:
+                all_file_paths.append(path)
+        
+        # 添加文档文件
+        if doc_results:
+            for doc in doc_results:
+                if doc['filepath']:
+                    all_file_paths.append(doc['filepath'])
+        
+        # 添加音频文件
+        if audio_results:
+            for audio in audio_results:
+                if audio['filepath']:
+                    all_file_paths.append(audio['filepath'])
+        
+        # 删除所有文件
+        try:
+            for path in all_file_paths:
+                if path:  # 确保路径不为空
+                    try:
+                        full_path = os.path.join("static", path) if not os.path.isabs(path) else path
+                        if os.path.exists(full_path):
+                            os.remove(full_path)
+                            logger.info(f"成功删除文件: {full_path}")
+                        else:
+                            logger.warning(f"文件不存在: {full_path}")
+                    except Exception as e:
+                        logger.error(f"删除文件失败 {path}: {e}")
+        except Exception as e:
+            logger.error(f"删除文件过程中发生错误: {e}")
+            return False
+        
+        # 删除关联的文档和音频记录
+        try:
+            self.execute_query("DELETE FROM document WHERE digital_human_id = %s", (digital_human_id,))
+            self.execute_query("DELETE FROM audio_file WHERE digital_human_id = %s", (digital_human_id,))
+        except Exception as e:
+            logger.error(f"删除关联记录失败: {e}")
+            return False
+            
+        # 删除数字人记录
         query = "DELETE FROM digital_human WHERE id = %s"
         row_count = self.execute_query(query, (digital_human_id,))
         return row_count is not None and row_count > 0
+   #更新至此
     
     def get_digital_human(self, digital_human_id: int) -> Optional[Dict]:
         """根据ID获取数字人信息
@@ -322,36 +395,61 @@ class DatabaseManager:
         query = "SELECT * FROM digital_human ORDER BY id DESC"
         results = self.execute_query(query)
         return [self._format_digital_human_response(record) for record in results] if results else []
-    
-    def get_digital_humans_with_pagination(self, skip: int = 0, limit: int = 10) -> Tuple[List[Dict], int]:
+
+#5.05邓博文更新
+   def get_digital_humans_with_pagination(self, skip: int = 0, limit: int = 10, user_id: Optional[int] = None) -> Tuple[List[Dict], int]:
         """获取数字人记录，支持分页
         
         Args:
             skip: 跳过的记录数
             limit: 每页记录数
+            user_id: 用户ID（可选）
             
         Returns:
             Tuple[List[Dict], int]: 包含分页结果和总记录数的元组
         """
+        # 构建查询条件
+        if user_id is not None:
+            # 获取用户绑定的所有用户ID（包括自己、绑定到自己的用户，以及自己绑定的管理者）
+            bound_users_query = """
+                SELECT id FROM user 
+                WHERE id = %s 
+                OR bound_to_user_id = %s
+                OR id IN (
+                    SELECT bound_to_user_id 
+                    FROM user 
+                    WHERE id = %s
+                )
+            """
+            bound_users = self.execute_query(bound_users_query, (user_id, user_id, user_id))
+            user_ids = [str(user['id']) for user in bound_users] if bound_users else [str(user_id)]
+            
+            where_clause = f"WHERE user_id IN ({','.join(user_ids)})"
+            params = ()
+        else:
+            where_clause = ""
+            params = ()
+        
         # 获取总记录数
-        count_query = "SELECT COUNT(*) as total FROM digital_human"
-        count_result = self.execute_query(count_query)
+        count_query = f"SELECT COUNT(*) as total FROM digital_human {where_clause}"
+        count_result = self.execute_query(count_query, params)
         total = count_result[0]['total'] if count_result else 0
         
         # 获取分页数据
-        query = f"SELECT * FROM digital_human ORDER BY id DESC LIMIT {skip}, {limit}"
-        results = self.execute_query(query)
+        query = f"SELECT * FROM digital_human {where_clause} ORDER BY id DESC LIMIT {skip}, {limit}"
+        results = self.execute_query(query, params)
         
         formatted_results = [self._format_digital_human_response(record) for record in results] if results else []
         return formatted_results, total
     
-    def search_digital_humans(self, search_term: str, skip: int = 0, limit: int = 10) -> Tuple[List[Dict], int]:
+    def search_digital_humans(self, search_term: str, skip: int = 0, limit: int = 10, user_id: Optional[int] = None) -> Tuple[List[Dict], int]:
         """搜索数字人记录
         
         Args:
             search_term: 搜索关键词
             skip: 跳过的记录数
             limit: 每页记录数
+            user_id: 用户ID（可选）
             
         Returns:
             Tuple[List[Dict], int]: 包含搜索结果和总记录数的元组
@@ -359,34 +457,58 @@ class DatabaseManager:
         # 构建搜索条件
         search_condition = "%" + search_term + "%"
         
+        # 构建用户ID条件
+        if user_id is not None:
+            # 获取用户绑定的所有用户ID（包括自己、绑定到自己的用户，以及自己绑定的管理者）
+            bound_users_query = """
+                SELECT id FROM user 
+                WHERE id = %s 
+                OR bound_to_user_id = %s
+                OR id IN (
+                    SELECT bound_to_user_id 
+                    FROM user 
+                    WHERE id = %s
+                )
+            """
+            bound_users = self.execute_query(bound_users_query, (user_id, user_id, user_id))
+            user_ids = [str(user['id']) for user in bound_users] if bound_users else [str(user_id)]
+            
+            user_condition = f"AND user_id IN ({','.join(user_ids)})"
+            params = [search_condition, search_condition, search_condition]
+        else:
+            user_condition = ""
+            params = [search_condition, search_condition, search_condition]
+        
         # 获取匹配的总记录数
-        count_query = """
+        count_query = f"""
             SELECT COUNT(*) as total 
             FROM digital_human 
-            WHERE name LIKE %s 
+            WHERE (name LIKE %s 
                OR phone LIKE %s 
-               OR description LIKE %s
+               OR description LIKE %s)
+            {user_condition}
         """
-        count_params = (search_condition, search_condition, search_condition)
-        count_result = self.execute_query(count_query, count_params)
+        count_result = self.execute_query(count_query, tuple(params))
         total = count_result[0]['total'] if count_result else 0
         
         # 获取分页搜索结果
-        search_query = """
+        search_query = f"""
             SELECT * 
             FROM digital_human 
-            WHERE name LIKE %s 
+            WHERE (name LIKE %s 
                OR phone LIKE %s 
-               OR description LIKE %s
+               OR description LIKE %s)
+            {user_condition}
             ORDER BY id DESC
             LIMIT %s, %s
         """
-        search_params = (search_condition, search_condition, search_condition, skip, limit)
-        results = self.execute_query(search_query, search_params)
+        params.extend([skip, limit])
+        results = self.execute_query(search_query, tuple(params))
         
         formatted_results = [self._format_digital_human_response(record) for record in results] if results else []
         return formatted_results, total
-    
+#更新至此
+
     def update_digital_human(self, digital_human_id: int, update_data: Dict[str, Any]) -> bool:
         """更新数字人信息
         
@@ -420,7 +542,7 @@ class DatabaseManager:
         valid_fields = [
             'name', 'phone', 'description', 'user_id',
             'reference_audio_path', 'train_audio_path', 'image_path',
-            'video_path', 'patient_info_path'
+            'video_path', 'patient_info_path', 'gender', 'age'
         ]
         
         update_parts = []
@@ -458,6 +580,7 @@ class DatabaseManager:
         logger.info(f"表是否存在: {table_exists}")
         return table_exists
 
+#5.05邓博文更新
     def create_table(self) -> bool:
         """创建digital_human表
         
@@ -476,6 +599,8 @@ class DatabaseManager:
             video_path VARCHAR(500),
             patient_info_path VARCHAR(500),
             user_id INT NOT NULL,
+            gender VARCHAR(10),
+            age INT,
             FOREIGN KEY (user_id) REFERENCES user(id)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
         """
@@ -483,6 +608,7 @@ class DatabaseManager:
         result = self.execute_query(query)
         logger.info(f"表创建结果: {result is not None}")
         return result is not None
+#更新至此
 
     def add_missing_columns(self) -> bool:
         """添加可能缺失的列
@@ -499,7 +625,7 @@ class DatabaseManager:
             logger.error(f"添加列失败: {e}", exc_info=True)
             return False
     
-    def _modify_column_length(self) -> bool:
+   def _modify_column_length(self) -> bool:
         """修改文件路径列的长度，以适应完整的Windows路径
         
         Returns:
