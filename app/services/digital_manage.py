@@ -132,11 +132,14 @@ class DigitalManageService:
                 local_humans = [h for h in local_humans if h.get('user_id') == user_id]
             return local_humans, len(local_humans)
     
-    def get_digital_human(self, digital_human_id: str, db) -> Tuple[bool, Dict[str, Any], str]:
+   def get_digital_human(self, digital_human_id: str, user_id: int, db) -> Tuple[bool, Dict[str, Any], str]:
         """获取单个数字人信息"""
         # 检查是否是本地临时ID
         if digital_human_id.startswith("local-") and digital_human_id in LOCAL_TEMP_DATA:
             local_data = LOCAL_TEMP_DATA[digital_human_id]
+            # 检查本地数据是否属于指定用户
+            if local_data.get('user_id') != user_id:
+                return False, {}, f"ID为{digital_human_id}的数字人不属于用户{user_id}"
             self._ensure_required_fields(local_data)
             return True, local_data, "获取数字人成功（本地模式）"
         
@@ -146,6 +149,10 @@ class DigitalManageService:
             
             if not human:
                 return False, {}, f"ID为{digital_human_id}的数字人不存在"
+            
+            # 检查数字人是否属于指定用户
+            if human.get('user_id') != user_id:
+                return False, {}, f"ID为{digital_human_id}的数字人不属于用户{user_id}"
             
             # 确保所有必要字段存在
             self._ensure_required_fields(human)
@@ -158,7 +165,7 @@ class DigitalManageService:
             logger.error(f"获取数字人信息出错: {e}", exc_info=True)
             return False, {}, "获取数字人信息时发生错误"
     
-    def delete_digital_human(self, digital_human_id: str, db) -> Tuple[bool, str]:
+   def delete_digital_human(self, digital_human_id: str, db) -> Tuple[bool, str]:
         """删除数字人"""
         # 检查是否是本地临时ID
         if digital_human_id.startswith("local-") and digital_human_id in LOCAL_TEMP_DATA:
@@ -290,6 +297,9 @@ class DigitalManageService:
             
         if 'phone' not in data or not data['phone']:
             data['phone'] = ''
+            
+        if 'user_id' not in data or not data['user_id']:
+            data['user_id'] = 1  # 设置默认用户ID为1，可以根据实际需求调整
 
 # 创建服务实例
 digital_manage_service = DigitalManageService() 
