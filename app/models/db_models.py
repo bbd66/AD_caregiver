@@ -5,22 +5,30 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
+#5.05 邓博文更新
 class User(Base):
     """用户模型"""
     __tablename__ = 'user'
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(50), unique=True, nullable=False)
     password = Column(String(100), nullable=False)
+    email = Column(String(100))
+    phone = Column(String(20))
+    role = Column(String(20), nullable=False, default='user')
+    bound_to_user_id = Column(Integer, ForeignKey('user.id'))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     digital_humans = relationship("DigitalHuman", backref="owner")
+    bound_user = relationship("User", remote_side=[id], backref="bound_users")
 
 class DigitalHuman(Base):
     """数字人模型"""
     __tablename__ = 'digital_human'
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(50), nullable=False)
+    gender = Column(String(10))
+    age = Column(Integer)
     phone = Column(String(20))
     description = Column(Text)
     reference_audio_path = Column(String(500))
@@ -28,9 +36,11 @@ class DigitalHuman(Base):
     image_path = Column(String(500))
     video_path = Column(String(500))
     patient_info_path = Column(String(500))
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
     documents = relationship("Document", back_populates="digital_human")
     audio_files = relationship("AudioFile", back_populates="digital_human")
+#更新至此
 
 class Document(Base):
     """文档模型"""
