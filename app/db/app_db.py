@@ -396,8 +396,7 @@ class DatabaseManager:
         results = self.execute_query(query)
         return [self._format_digital_human_response(record) for record in results] if results else []
 
-#5.05邓博文更新
-   def get_digital_humans_with_pagination(self, skip: int = 0, limit: int = 10, user_id: Optional[int] = None) -> Tuple[List[Dict], int]:
+    def get_digital_humans_with_pagination(self, skip: int = 0, limit: int = 10, user_id: Optional[int] = None) -> Tuple[List[Dict], int]:
         """获取数字人记录，支持分页
         
         Args:
@@ -507,7 +506,6 @@ class DatabaseManager:
         
         formatted_results = [self._format_digital_human_response(record) for record in results] if results else []
         return formatted_results, total
-#更新至此
 
     def update_digital_human(self, digital_human_id: int, update_data: Dict[str, Any]) -> bool:
         """更新数字人信息
@@ -580,7 +578,6 @@ class DatabaseManager:
         logger.info(f"表是否存在: {table_exists}")
         return table_exists
 
-#5.05邓博文更新
     def create_table(self) -> bool:
         """创建digital_human表
         
@@ -608,7 +605,6 @@ class DatabaseManager:
         result = self.execute_query(query)
         logger.info(f"表创建结果: {result is not None}")
         return result is not None
-#更新至此
 
     def add_missing_columns(self) -> bool:
         """添加可能缺失的列
@@ -625,7 +621,7 @@ class DatabaseManager:
             logger.error(f"添加列失败: {e}", exc_info=True)
             return False
     
-   def _modify_column_length(self) -> bool:
+    def _modify_column_length(self) -> bool:
         """修改文件路径列的长度，以适应完整的Windows路径
         
         Returns:

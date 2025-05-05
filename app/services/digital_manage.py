@@ -84,18 +84,7 @@ class DigitalManageService:
             return True, digital_human_data, "创建数字人成功（本地模式）"
     
     def get_digital_humans(self, skip: int, limit: int, search: Optional[str], user_id: Optional[int], db) -> Tuple[List[Dict[str, Any]], int]:
-        """获取数字人列表，支持分页和搜索
-        
-        Args:
-            skip: 分页起始位置
-            limit: 每页数量
-            search: 搜索关键词（可选）
-            user_id: 用户ID（可选）
-            db: 数据库连接
-            
-        Returns:
-            Tuple[List[Dict], int]: 包含数字人列表和总数的元组
-        """
+        """获取数字人列表，支持分页和搜索"""
         try:
             if search:
                 # 使用搜索功能
@@ -132,7 +121,7 @@ class DigitalManageService:
                 local_humans = [h for h in local_humans if h.get('user_id') == user_id]
             return local_humans, len(local_humans)
     
-   def get_digital_human(self, digital_human_id: str, user_id: int, db) -> Tuple[bool, Dict[str, Any], str]:
+    def get_digital_human(self, digital_human_id: str, user_id: int, db) -> Tuple[bool, Dict[str, Any], str]:
         """获取单个数字人信息"""
         # 检查是否是本地临时ID
         if digital_human_id.startswith("local-") and digital_human_id in LOCAL_TEMP_DATA:
@@ -165,7 +154,7 @@ class DigitalManageService:
             logger.error(f"获取数字人信息出错: {e}", exc_info=True)
             return False, {}, "获取数字人信息时发生错误"
     
-   def delete_digital_human(self, digital_human_id: str, db) -> Tuple[bool, str]:
+    def delete_digital_human(self, digital_human_id: str, db) -> Tuple[bool, str]:
         """删除数字人"""
         # 检查是否是本地临时ID
         if digital_human_id.startswith("local-") and digital_human_id in LOCAL_TEMP_DATA:
